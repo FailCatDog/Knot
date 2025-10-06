@@ -1,5 +1,6 @@
 import { ImageCard, ImageItem } from '../components/ImageCard'
 // 这里是李玮的分支修改
+//修改2
 @Component
 export struct DiscoverPage {
   @State imageList: ImageItem[] = [
