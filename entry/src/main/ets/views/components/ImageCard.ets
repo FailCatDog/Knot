@@ -81,6 +81,10 @@ export struct ImageCard {
                 .width(20)
                 .height(20)
                 .fillColor(this.item.isLiked ? '#FF4757' : '#999999')
+                .animation({
+                  duration: 200,
+                  curve: Curve.EaseInOut
+                })
                 .onClick(() => {
                   this.onLikeClick(this.item.id)
                 })
@@ -91,6 +95,10 @@ export struct ImageCard {
             Text(this.item.likeCount.toString())
               .fontSize(14)
               .fontColor($r('sys.color.ohos_id_color_text_secondary'))
+              .animation({
+                duration: 200,
+                curve: Curve.EaseInOut
+              })
           }
           .alignItems(VerticalAlign.Center)
         }
