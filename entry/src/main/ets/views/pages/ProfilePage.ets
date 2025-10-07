@@ -11,7 +11,7 @@ export struct ProfilePage {
       .width('100%')
       .height(56)
       .padding({ left: 16, right: 16 })
-      .backgroundColor('#FFFFFF')
+      .backgroundColor('#F5F5F5')
       .justifyContent(FlexAlign.Start)
 
       Column() {

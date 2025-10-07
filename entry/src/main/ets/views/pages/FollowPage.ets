@@ -5,41 +5,161 @@ export struct FollowPage {
   @State imageList: ImageItem[] = [
     {
       id: '1',
-      imageUrl: 'https://picsum.photos/200/280',
-      title: '关注用户的精彩分享',
+      imageUrl: 'https://picsum.photos/280/350',
+      title: '自然',
       userAvatar: 'https://picsum.photos/40/40',
-      userId: 'friend_alice',
-      likeCount: 95,
-      isLiked: true,
-      imageHeight: 280
+      userId: '青青草原',
+      likeCount: 41,
+      isLiked: false,
+      imageHeight: 350
     },
     {
       id: '2',
-      imageUrl: 'https://picsum.photos/200/320',
-      title: '朋友的旅行日记',
+      imageUrl: 'https://picsum.photos/280/160',
+      title: '同人图鉴',
       userAvatar: 'https://picsum.photos/40/40',
-      userId: 'traveler_bob',
-      likeCount: 156,
-      isLiked: false,
-      imageHeight: 320
+      userId: '青青草原',
+      likeCount: 9,
+      isLiked: true,
+      imageHeight: 160
     },
     {
       id: '3',
-      imageUrl: 'https://picsum.photos/200/260',
-      title: '生活中的美好瞬间',
+      imageUrl: 'https://picsum.photos/280/280',
+      title: '十几就行了',
       userAvatar: 'https://picsum.photos/40/40',
-      userId: 'life_lover',
-      likeCount: 78,
-      isLiked: true,
-      imageHeight: 260
+      userId: 'vivo影像',
+      likeCount: 89,
+      isLiked: false,
+      imageHeight: 280
     },
     {
       id: '4',
-      imageUrl: 'https://picsum.photos/200/340',
-      title: '创意摄影作品',
+      imageUrl: 'https://picsum.photos/280/140',
+      title: 'City&City',
       userAvatar: 'https://picsum.photos/40/40',
-      userId: 'creative_mind',
+      userId: 'vivo影像',
+      likeCount: 167,
+      isLiked: false,
+      imageHeight: 140
+    },
+    {
+      id: '5',
+      imageUrl: 'https://picsum.photos/280/320',
+      title: '',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: 'vivo影像',
+      likeCount: 203,
+      isLiked: true,
+      imageHeight: 320
+    },
+    {
+      id: '6',
+      imageUrl: 'https://picsum.photos/280/240',
+      title: '',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: 'pet_lover',
+      likeCount: 145,
+      isLiked: false,
+      imageHeight: 240
+    },
+    {
+      id: '7',
+      imageUrl: 'https://picsum.photos/280/180',
+      title: '美食日记',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '美食达人',
+      likeCount: 89,
+      isLiked: false,
+      imageHeight: 120
+    },
+    {
+      id: '8',
+      imageUrl: 'https://picsum.photos/280/380',
+      title: '旅行记录',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '旅行者',
+      likeCount: 156,
+      isLiked: true,
+      imageHeight: 380
+    },
+    {
+      id: '9',
+      imageUrl: 'https://picsum.photos/280/150',
+      title: '',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '摄影师小王',
+      likeCount: 78,
+      isLiked: false,
+      imageHeight: 150
+    },
+    {
+      id: '10',
+      imageUrl: 'https://picsum.photos/280/400',
+      title: '城市印象',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '城市探索者',
       likeCount: 234,
+      isLiked: false,
+      imageHeight: 400
+    },
+    {
+      id: '11',
+      imageUrl: 'https://picsum.photos/280/170',
+      title: '手工制作',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '手工爱好者',
+      likeCount: 67,
+      isLiked: true,
+      imageHeight: 130
+    },
+    {
+      id: '12',
+      imageUrl: 'https://picsum.photos/280/360',
+      title: '',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '艺术家',
+      likeCount: 189,
+      isLiked: false,
+      imageHeight: 360
+    },
+    {
+      id: '13',
+      imageUrl: 'https://picsum.photos/280/180',
+      title: '生活随拍',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '生活记录者',
+      likeCount: 123,
+      isLiked: false,
+      imageHeight: 180
+    },
+    {
+      id: '14',
+      imageUrl: 'https://picsum.photos/280/420',
+      title: '运动时刻',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '运动达人',
+      likeCount: 98,
+      isLiked: true,
+      imageHeight: 420
+    },
+    {
+      id: '15',
+      imageUrl: 'https://picsum.photos/280/110',
+      title: '',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '设计师',
+      likeCount: 145,
+      isLiked: false,
+      imageHeight: 110
+    },
+    {
+      id: '16',
+      imageUrl: 'https://picsum.photos/280/340',
+      title: '夜景摄影',
+      userAvatar: 'https://picsum.photos/40/40',
+      userId: '夜拍专家',
+      likeCount: 267,
       isLiked: false,
       imageHeight: 340
     }
@@ -75,32 +195,36 @@ export struct FollowPage {
     .width('100%')
     .height(56)
     .padding({ left: 16, right: 16 })
-    .backgroundColor('#FFFFFF')
+    .backgroundColor('#F5F5F5')
   }
 
   @Builder
   buildContent() {
-    WaterFlow() {
-      ForEach(this.imageList, (item: ImageItem, index: number) => {
-        FlowItem() {
-          ImageCard({
-            item: item,
-            onLikeClick: (id: string) => {
-              this.handleLikeClick(id)
-            }
-          })
-        }
-      })
+    Scroll() {
+      WaterFlow() {
+        ForEach(this.imageList, (item: ImageItem, index: number) => {
+          FlowItem() {
+            ImageCard({
+              item: item,
+              onLikeClick: (id: string) => {
+                this.handleLikeClick(id)
+              }
+            })
+          }
+        })
+      }
+      .columnsTemplate('1fr')
+      .rowsGap(20)
+      .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+      .width('100%')
     }
-    .columnsTemplate('1fr 1fr')
-    .columnsGap(8)
-    .rowsGap(8)
-    .padding({ left: 8, right: 8, top: 8 })
     .width('100%')
     .layoutWeight(1)
+    .scrollable(ScrollDirection.Vertical)
+    .scrollBar(BarState.Off)
   }
 
-  handleLikeClick(id: string) {
+  handleLikeClick(id: string): void {
     const index = this.imageList.findIndex(item => item.id === id)
     if (index !== -1) {
       this.imageList[index].isLiked = !this.imageList[index].isLiked
