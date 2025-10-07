@@ -2,6 +2,8 @@ import { ImageCard, ImageItem } from '../components/ImageCard'
 
 @Component
 export struct FollowPage {
+  @State likedItems: Set<string> = new Set(['1', '3', '6', '8', '10'])
+  @State likeCounts: Map<string, number> = new Map()
   @State imageList: ImageItem[] = [
     {
       id: '1',
@@ -165,6 +167,20 @@ export struct FollowPage {
     }
   ]
 
+  aboutToAppear(): void {
+    this.imageList.forEach(item => {
+      this.likeCounts.set(item.id, item.likeCount)
+    })
+  }
+
+  isItemLiked(id: string): boolean {
+    return this.likedItems.has(id)
+  }
+
+  getItemLikeCount(id: string): number {
+    return this.likeCounts.get(id) || 0
+  }
+
   build() {
     Column() {
       this.buildHeader()
@@ -205,7 +221,16 @@ export struct FollowPage {
         ForEach(this.imageList, (item: ImageItem, index: number) => {
           FlowItem() {
             ImageCard({
-              item: item,
+              item: {
+                id: item.id,
+                imageUrl: item.imageUrl,
+                title: item.title,
+                userAvatar: item.userAvatar,
+                userId: item.userId,
+                likeCount: this.getItemLikeCount(item.id),
+                isLiked: this.isItemLiked(item.id),
+                imageHeight: item.imageHeight
+              },
               onLikeClick: (id: string) => {
                 this.handleLikeClick(id)
               }
@@ -225,10 +250,15 @@ export struct FollowPage {
   }
 
   handleLikeClick(id: string): void {
-    const index = this.imageList.findIndex(item => item.id === id)
-    if (index !== -1) {
-      this.imageList[index].isLiked = !this.imageList[index].isLiked
-      this.imageList[index].likeCount += this.imageList[index].isLiked ? 1 : -1
+    const currentCount = this.getItemLikeCount(id)
+    const isCurrentlyLiked = this.isItemLiked(id)
+
+    if (isCurrentlyLiked) {
+      this.likedItems.delete(id)
+      this.likeCounts.set(id, currentCount - 1)
+    } else {
+      this.likedItems.add(id)
+      this.likeCounts.set(id, currentCount + 1)
     }
   }
 }
