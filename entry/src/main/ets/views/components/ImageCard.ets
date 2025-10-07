@@ -9,68 +9,99 @@ export interface ImageItem {
   imageHeight: number
 }
 
+interface ImageCompleteEvent {
+  width: number
+  height: number
+}
+
 @Component
 export struct ImageCard {
   @Prop item: ImageItem
-  onLikeClick?: (id: string) => void
+  onLikeClick: (id: string) => void = () => {}
+  onFollowClick: (id: string) => void = () => {}
+
+  @State private imageAspectRatio: number = 0.75
 
   build() {
     Column() {
-      Image(this.item.imageUrl)
-        .width('100%')
-        .height(this.item.imageHeight)
-        .objectFit(ImageFit.Cover)
-        .borderRadius({ topLeft: 8, topRight: 8 })
-
-      Column() {
-        Text(this.item.title)
-          .fontSize(14)
-          .fontColor('#333333')
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      // 图片区域
+      Stack({ alignContent: Alignment.TopEnd }) {
+        // 图片
+        Image(this.item.imageUrl)
           .width('100%')
-          .margin({ bottom: 8 })
+          .aspectRatio(this.imageAspectRatio)
+          .objectFit(ImageFit.Cover)
+          .borderRadius(12)
+          .onComplete((event: ImageCompleteEvent) => {
+            if (event.width > 0 && event.height > 0) {
+              this.imageAspectRatio = event.width / event.height
+            }
+          })
+      }
+      .width('100%')
+      .clip(true)
 
+      // 内容区域
+      Column() {
+        // 标题
+        if (this.item.title && this.item.title.trim() !== '') {
+          Text(this.item.title)
+            .fontSize(14)
+            .fontColor($r('sys.color.ohos_id_color_text_primary'))
+            .fontWeight(FontWeight.Medium)
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .width('100%')
+            .margin({ bottom: 8 })
+        }
+
+        // 用户信息和点赞
         Row() {
+          // 用户信息
           Row() {
             Image(this.item.userAvatar)
-              .width(20)
-              .height(20)
-              .borderRadius(10)
-              .margin({ right: 6 })
+              .width(24)
+              .height(24)
+              .borderRadius(12)
+              .margin({ right: 8 })
+              .objectFit(ImageFit.Cover)
 
             Text(this.item.userId)
-              .fontSize(12)
-              .fontColor('#666666')
+              .fontSize(14)
+              .fontColor($r('sys.color.ohos_id_color_text_secondary'))
           }
+          .alignItems(VerticalAlign.Center)
           .layoutWeight(1)
 
+          // 点赞区域
           Row() {
-            Text(this.item.isLiked ? '♥' : '♡')
-              .fontSize(16)
-              .fontColor(this.item.isLiked ? '#FF4757' : '#999999')
-              .onClick(() => {
-                if (this.onLikeClick) {
+            // 点赞图标
+            Column() {
+              Image(this.item.isLiked ? $r('app.media.ic_heart_filled') : $r('app.media.ic_heart_outline'))
+                .width(20)
+                .height(20)
+                .fillColor(this.item.isLiked ? '#FF4757' : '#999999')
+                .onClick(() => {
                   this.onLikeClick(this.item.id)
-                }
-              })
+                })
+            }
+            .margin({ right: 4 })
 
+            // 点赞数
             Text(this.item.likeCount.toString())
-              .fontSize(12)
-              .fontColor('#666666')
-              .margin({ left: 4 })
+              .fontSize(14)
+              .fontColor($r('sys.color.ohos_id_color_text_secondary'))
           }
+          .alignItems(VerticalAlign.Center)
         }
         .width('100%')
         .alignItems(VerticalAlign.Center)
       }
       .padding(12)
       .width('100%')
+      .backgroundColor('#F5F5F5')
     }
-    .backgroundColor('#FFFFFF')
-    .borderRadius(8)
     .width('100%')
+    .clip(true)
   }
 }
-
-
