@@ -36,17 +36,40 @@ struct MainPage {
     .width('100%')
     .height('100%')
     .backgroundColor('#F5F5F5')
+    .barHeight(56)
+    .barBackgroundColor('#F5F5F5')
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
   }
 
   @Builder TabBuilder(title: string, targetIndex: number) {
     Column() {
+      Image(this.getTabIcon(targetIndex))
+        .width(24)
+        .height(24)
+        .fillColor(this.currentIndex === targetIndex ? '#ffdd0223' : '#999999')
+        .margin({ bottom: 4 })
+
       Text(title)
-        .fontColor(this.currentIndex === targetIndex ? '#007DFF' : '#999999')
-        .fontSize(12)
+        .fontColor(this.currentIndex === targetIndex ? '#ffdd0223' : '#999999')
+        .fontSize(10)
         .fontWeight(this.currentIndex === targetIndex ? FontWeight.Bold : FontWeight.Normal)
     }
     .width('100%')
-    .height(56)
+    .height('100%')
     .justifyContent(FlexAlign.Center)
+    .border({
+      width: { top: 1 },
+      color: { top: '#E5E5E5' }
+    })
+  }
+
+  getTabIcon(index: number): Resource {
+    const icons = [
+      $r('app.media.ic_follow'),
+      $r('app.media.ic_discover'),
+      $r('app.media.ic_message'),
+      $r('app.media.ic_profile')
+    ]
+    return icons[index]
   }
 }
