@@ -2,6 +2,7 @@ export interface ImageItem {
   id: string
   imageUrl: string
   title: string
+  description: string
   userAvatar: string
   userId: string
   likeCount: number
@@ -19,6 +20,7 @@ export struct ImageCard {
   @Prop item: ImageItem
   onLikeClick: (id: string) => void = () => {}
   onFollowClick: (id: string) => void = () => {}
+  onCardClick: (id: string) => void = () => {}
 
   @State private imageAspectRatio: number = 0.75
 
@@ -111,5 +113,8 @@ export struct ImageCard {
     }
     .width('100%')
     .clip(true)
+    .onClick(() => {
+      this.onCardClick(this.item.id)
+    })
   }
 }
