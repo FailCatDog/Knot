@@ -23,7 +23,7 @@ struct MainPage {
       TabContent() {
         MessagePage()
       }
-      .tabBar(this.TabBuilder('消息', 2))
+      .tabBar(this.TabBuilder('摄像馆', 2))
 
       TabContent() {
         ProfilePage()
@@ -67,7 +67,7 @@ struct MainPage {
     const icons = [
       $r('app.media.ic_follow'),
       $r('app.media.ic_discover'),
-      $r('app.media.ic_message'),
+      $r('app.media.ic_technology'),
       $r('app.media.ic_profile')
     ]
     return icons[index]
