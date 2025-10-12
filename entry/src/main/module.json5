@@ -10,6 +10,7 @@
       "2in1",
       "wearable"
     ],
+    "routerMap": "$profile:router_map",
     "deliveryWithInstall": true,
     "installationFree": false,
     "pages": "$profile:main_pages",
@@ -19,6 +20,17 @@
         "reason": "$string:perm_internet_reason",
         "usedScene": {
           "abilities": ["EntryAbility"],
+          "when": "inuse"
+        }
+      },
+      {
+        "name": "ohos.permission.READ_MEDIA",
+        "reason": "$string:perm_read_media_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility",
+            "GalleryAbility"
+          ],
           "when": "inuse"
         }
       }
