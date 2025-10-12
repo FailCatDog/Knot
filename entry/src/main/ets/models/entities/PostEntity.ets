@@ -1,7 +1,7 @@
 /**
  * 图片实体
  */
-export interface ImageEntity {
+export interface PostEntity {
   id: number;
   image_id: string;
   user_id: number;

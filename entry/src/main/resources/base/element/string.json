@@ -24,6 +24,10 @@
     {
       "name": "perm_internet_reason",
       "value": "应用需要联网获取数据"
+    },
+    {
+      "name": "perm_read_media_reason",
+      "value": "应用需要访问媒体文件以便用户选择和上传"
     }
   ]
 }

@@ -1,0 +1,9 @@
+{
+  "routerMap": [
+    {
+      "name": "CreatePostPage",
+      "pageSourceFile": "src/main/ets/pages/CreatePostPage.ets",
+      "buildFunction": "CreatePostPageBuilder"
+    }
+  ]
+}

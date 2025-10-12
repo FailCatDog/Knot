@@ -1,6 +1,5 @@
 {
   "src": [
-    "pages/MainPage",
-    "pages/PostDetailPage"
+    "pages/MainPage"
   ]
 }
