@@ -210,32 +210,24 @@ export struct FollowPage {
 
   @Builder
   buildHeader() {
-    Column() {
-      Row()
-        .width('100%')
-        .height(24)
-        .backgroundColor('#F5F5F5')
+    Row() {
+      Text('关注')
+        .fontSize(24)
+        .fontWeight(FontWeight.Bold)
+        .fontColor('#1A1A1A')
+
+      Blank()
 
       Row() {
-        Text('关注')
-          .fontSize(24)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#1A1A1A')
-
-        Blank()
-
-        Row() {
-          Image($r('app.media.ic_search'))
-            .width(20)
-            .height(20)
-        }
-        .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+        Image($r('app.media.ic_search'))
+          .width(20)
+          .height(20)
       }
-      .width('100%')
-      .height(56)
-      .padding({ left: 16, right: 16 })
+      .padding({ left: 12, right: 12, top: 6, bottom: 6 })
     }
     .width('100%')
+    .height(56)
+    .padding({ left: 16, right: 16 })
     .backgroundColor('#F5F5F5')
   }
 
