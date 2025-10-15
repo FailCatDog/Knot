@@ -1,6 +1,7 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
+import { TokenManager } from '../services/TokenManager';
 
 const DOMAIN = 0x0000;
 
@@ -15,8 +16,14 @@ export default class EntryAbility extends UIAbility {
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
-    // Main window is created, set main page for this ability
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+
+    const tokenManager = TokenManager.getInstance();
+    tokenManager.init(this.context).then(() => {
+      hilog.info(DOMAIN, 'testTag', 'TokenManager initialized successfully');
+    }).catch((error: Error) => {
+      hilog.error(DOMAIN, 'testTag', 'TokenManager initialization failed: %{public}s', error.message);
+    });
 
     windowStage.loadContent('pages/MainPage', (err) => {
       if (err.code) {
