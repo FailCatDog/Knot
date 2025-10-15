@@ -1,0 +1,11 @@
+{
+  "src": [
+    "pages/MainPage",
+    "pages/PostDetailPage",
+    "pages/SettingPage",
+    "views/pages/AuthPage",
+    "views/pages/ProfilePage",
+    "views/pages/EditProfilePage",
+    "views/pages/ChangePasswordPage"
+  ]
+}

@@ -1,4 +1,4 @@
-import { PostDetailViewModel } from '../viewmodels/PostDetailViewModel'
+import { PostDetailEntity } from '../models/entities/PostDetailEntity'
 
 @Builder
 export function PostDetailPageBuilder() {
@@ -7,10 +7,9 @@ export function PostDetailPageBuilder() {
 
 @Component
 struct PostDetailPage {
-  @State viewModel: PostDetailViewModel = new PostDetailViewModel()
+  @State postDetail: PostDetailEntity | null = null
   @Consume('NavPathStack') navPathStack: NavPathStack
   pathInfos: NavPathStack = new NavPathStack()
-  postId: string = ''
 
   @Builder
   buildHeader() {
@@ -24,13 +23,13 @@ struct PostDetailPage {
         })
 
       Row() {
-        Image(this.viewModel.postDetail?.userAvatar)
+        Image(this.postDetail?.userAvatar)
           .width(32)
           .height(32)
           .borderRadius(16)
           .margin({ right: 8 })
 
-        Text(this.viewModel.postDetail?.userName)
+        Text(this.postDetail?.userName)
           .fontSize(16)
           .fontColor('#333333')
           .fontWeight(FontWeight.Medium)
@@ -54,22 +53,33 @@ struct PostDetailPage {
 
   @Builder
   buildContent() {
-    if (this.viewModel.postDetail) {
+    if (this.postDetail) {
       Scroll() {
         Column() {
-          Image(this.viewModel.postDetail.imageUrl)
+          if (this.postDetail.imageUrls && this.postDetail.imageUrls.length > 0) {
+            Swiper() {
+              ForEach(this.postDetail.imageUrls, (imageUrl: string) => {
+                Image(imageUrl)
+                  .width('100%')
+                  .objectFit(ImageFit.Cover)
+                  .borderRadius(12)
+              })
+            }
             .width('100%')
-            .objectFit(ImageFit.Cover)
-            .borderRadius(12)
+            .height(400)
+            .autoPlay(false)
+            .indicator(this.postDetail.imageUrls.length > 1)
+            .loop(false)
+          }
 
-          Text(this.viewModel.postDetail.title)
+          Text(this.postDetail.title)
             .fontSize(20)
             .fontColor('#333333')
             .fontWeight(FontWeight.Bold)
             .width('100%')
             .margin({ top: 16, bottom: 12 })
 
-          Text(this.viewModel.postDetail.description)
+          Text(this.postDetail.description)
             .fontSize(16)
             .fontColor('#666666')
             .lineHeight(24)
@@ -77,17 +87,17 @@ struct PostDetailPage {
             .margin({ bottom: 16 })
 
           Row() {
-            Text(this.viewModel.postDetail.publishDate)
+            Text(this.postDetail.publishDate)
               .fontSize(14)
               .fontColor('#999999')
 
             Blank()
 
             Row() {
-              Image(this.viewModel.postDetail.isLiked ? $r('app.media.ic_heart_filled') : $r('app.media.ic_heart_outline'))
+              Image(this.postDetail.isLiked ? $r('app.media.ic_heart_filled') : $r('app.media.ic_heart_outline'))
                 .width(20)
                 .height(20)
-                .fillColor(this.viewModel.postDetail.isLiked ? '#FF4757' : '#999999')
+                .fillColor(this.postDetail.isLiked ? '#FF4757' : '#999999')
                 .animation({
                   duration: 200,
                   curve: Curve.EaseInOut
@@ -96,7 +106,7 @@ struct PostDetailPage {
                   this.handleLike()
                 })
 
-              Text(this.viewModel.postDetail.likeCount.toString())
+              Text(this.postDetail.likeCount.toString())
                 .fontSize(14)
                 .fontColor('#666666')
                 .margin({ left: 4 })
@@ -127,7 +137,30 @@ struct PostDetailPage {
   }
 
   handleLike(): void {
-    this.viewModel.toggleLike()
+    if (this.postDetail) {
+      this.postDetail.isLiked = !this.postDetail.isLiked
+      this.postDetail.likeCount += this.postDetail.isLiked ? 1 : -1
+    }
+  }
+
+  convertPostToDetail(post: Record<string, Object>): PostDetailEntity {
+    const createTime = post.create_time
+    const publishDate = typeof createTime === 'string' && createTime ? createTime.split(' ')[0] : ''
+    const imageUrls = post.image_urls as Object
+    const fullImageUrls: string[] = Array.isArray(imageUrls) ? imageUrls : []
+    
+    return {
+      id: post.post_id as string,
+      imageUrls: fullImageUrls,
+      title: post.title as string,
+      description: post.description as string,
+      userAvatar: 'https://picsum.photos/60/60',
+      userId: `用户${post.user_id}`,
+      userName: `用户${post.user_id}`,
+      publishDate: publishDate,
+      likeCount: post.like_count as number,
+      isLiked: false
+    }
   }
 
   build() {
@@ -143,9 +176,11 @@ struct PostDetailPage {
     .hideTitleBar(true)
     .onReady((context: NavDestinationContext) => {
       this.pathInfos = context.pathStack
-      this.postId = context.pathInfo.param as string
-      console.log('[PostDetailPage] 接收到的参数:', this.postId)
-      this.viewModel.loadPostDetail(this.postId)
+      const post = context.pathInfo.param as Record<string, Object>
+      console.log('[PostDetailPage] 接收到的参数:', JSON.stringify(post))
+      if (post) {
+        this.postDetail = this.convertPostToDetail(post)
+      }
     })
   }
 }

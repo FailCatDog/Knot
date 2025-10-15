@@ -4,6 +4,26 @@
       "name": "CreatePostPage",
       "pageSourceFile": "src/main/ets/pages/CreatePostPage.ets",
       "buildFunction": "CreatePostPageBuilder"
+    },
+    {
+      "name": "SettingPage",
+      "pageSourceFile": "src/main/ets/pages/SettingPage.ets",
+      "buildFunction": "SettingPageBuilder"
+    },
+    {
+      "name": "PostDetailPage",
+      "pageSourceFile": "src/main/ets/pages/PostDetailPage.ets",
+      "buildFunction": "PostDetailPageBuilder"
+    },
+    {
+      "name": "EditProfilePage",
+      "pageSourceFile": "src/main/ets/views/pages/EditProfilePage.ets",
+      "buildFunction": "EditProfilePageBuilder"
+    },
+    {
+      "name": "ChangePasswordPage",
+      "pageSourceFile": "src/main/ets/views/pages/ChangePasswordPage.ets",
+      "buildFunction": "ChangePasswordPageBuilder"
     }
   ]
 }

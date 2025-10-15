@@ -12,33 +12,29 @@ interface HttpStatus {
 
 // 帖子 API 端点
 interface PostEndpoints {
-  // 创建帖子
   CREATE_POST: string;
-  // 获取Feed流
   GET_FEED: string;
-  // 获取帖子详情
   GET_POST_DETAIL: string;
-  // 更新帖子
   UPDATE_POST: string;
-  // 删除帖子
   DELETE_POST: string;
-  // 获取用户帖子列表
   GET_USER_POSTS: string;
-  // 向帖子添加图片
   ADD_POST_IMAGE: string;
-  // 删除帖子中的图片
   DELETE_POST_IMAGE: string;
-  // 调整帖子图片顺序
   UPDATE_POST_IMAGES_ORDER: string;
 }
 
+interface UserEndpoints {
+  REGISTER: string;
+  LOGIN: string;
+  GET_USER_INFO: string;
+  UPDATE_USER_INFO: string;
+  CHANGE_PASSWORD: string;
+}
+
 export class ApiConstants {
-  // 基础 API 地址
   static readonly BASE_URL = 'http://8.138.115.164:8080/api/v1';
-  // 请求超时时间（毫秒）
   static readonly TIMEOUT = 10000;
 
-  // 帖子相关 API 端点
   static readonly ENDPOINTS: PostEndpoints = {
     CREATE_POST: '/posts',
     GET_FEED: '/posts',
@@ -51,7 +47,14 @@ export class ApiConstants {
     UPDATE_POST_IMAGES_ORDER: '/posts/{post_id}/images/order'
   };
 
-  // HTTP 状态码
+  static readonly USER_ENDPOINTS: UserEndpoints = {
+    REGISTER: '/auth/register',
+    LOGIN: '/auth/login',
+    GET_USER_INFO: '/users/profile',
+    UPDATE_USER_INFO: '/users/info',
+    CHANGE_PASSWORD: '/users/password'
+  };
+
   static readonly HTTP_STATUS: HttpStatus = {
     SUCCESS: 200,
     BAD_REQUEST: 400,
