@@ -3,7 +3,7 @@ export interface ImageItem {
   imageUrl: string
   title: string
   description: string
-  userAvatar: string
+  userAvatar: string | Resource
   userId: string
   likeCount: number
   isLiked: boolean

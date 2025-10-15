@@ -10,7 +10,10 @@ export class DiscoverViewModel {
   hasMore: boolean = true;
 
   async loadPosts(isRefresh: boolean = false): Promise<void> {
-    if (this.isLoading) return;
+    if (this.isLoading) {
+      console.log('[DiscoverViewModel] 正在加载中，跳过');
+      return;
+    }
 
     if (isRefresh) {
       this.currentPage = 1;
@@ -25,30 +28,35 @@ export class DiscoverViewModel {
     console.log('[DiscoverViewModel] 开始加载数据，页码:', this.currentPage);
     this.isLoading = true;
 
-    const response = await getPosts(this.currentPage, this.pageSize);
+    try {
+      const response = await getPosts(this.currentPage, this.pageSize);
 
-    console.log('[DiscoverViewModel] 响应结果:', JSON.stringify(response));
+      console.log('[DiscoverViewModel] 响应结果:', JSON.stringify(response));
 
-    if (response.success && response.data) {
-      const newPosts = response.data.posts;
-      this.total = response.data.total;
+      if (response.success && response.data) {
+        const newPosts = response.data.posts;
+        this.total = response.data.total;
 
-      if (isRefresh) {
-        this.posts = newPosts;
+        if (isRefresh) {
+          this.posts = newPosts;
+        } else {
+          this.posts = [...this.posts, ...newPosts];
+        }
+
+        this.hasMore = this.posts.length < this.total;
+        this.currentPage += 1;
+
+        console.log('[DiscoverViewModel] 加载成功，当前帖子数:', this.posts.length, '总数:', this.total);
       } else {
-        this.posts = [...this.posts, ...newPosts];
+        console.log('[DiscoverViewModel] 加载失败:', response.message);
+        this.showError(response.message || '加载失败');
       }
-
-      this.hasMore = this.posts.length < this.total;
-      this.currentPage += 1;
-
-      console.log('[DiscoverViewModel] 加载成功，当前帖子数:', this.posts.length, '总数:', this.total);
-    } else {
-      console.log('[DiscoverViewModel] 加载失败:', response.message);
-      this.showError(response.message || '加载失败');
+    } catch (error) {
+      console.error('[DiscoverViewModel] 加载异常:', error);
+      this.showError('加载失败：' + (error as Error).message);
+    } finally {
+      this.isLoading = false;
     }
-
-    this.isLoading = false;
   }
 
   private showError(message: string): void {

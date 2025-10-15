@@ -1,7 +1,6 @@
 import { submitImage, type CreatePostParams, type SubmitImageResponse } from '../services/api/PostApi';
 import promptAction from '@ohos.promptAction';
 import { router } from '@kit.ArkUI';
-import { common } from '@kit.AbilityKit';
 import { fileIo } from '@kit.CoreFileKit';
 
 export class CreatePostViewModel {
@@ -63,25 +62,11 @@ export class CreatePostViewModel {
       const imageUri = this.selectedImages[i];
       console.log('[CreatePostViewModel] 读取第', i + 1, '张图片:', imageUri);
 
-      console.log('[CreatePostViewModel] 开始打开文件');
       const file = fileIo.openSync(imageUri, fileIo.OpenMode.READ_ONLY);
-      console.log('[CreatePostViewModel] 文件打开成功，fd:', file.fd);
-
-      console.log('[CreatePostViewModel] 开始获取文件信息');
       const stat: fileIo.Stat = fileIo.statSync(file.fd);
-      console.log('[CreatePostViewModel] 文件大小:', stat.size, 'bytes');
-
-      console.log('[CreatePostViewModel] 开始创建buffer');
       const buffer = new ArrayBuffer(stat.size);
-      console.log('[CreatePostViewModel] buffer创建成功');
-
-      console.log('[CreatePostViewModel] 开始读取文件内容');
       fileIo.readSync(file.fd, buffer);
-      console.log('[CreatePostViewModel] 文件内容读取成功');
-
-      console.log('[CreatePostViewModel] 开始关闭文件');
       fileIo.closeSync(file);
-      console.log('[CreatePostViewModel] 文件关闭成功');
 
       imageFiles.push(buffer);
       console.log('[CreatePostViewModel] 第', i + 1, '张图片处理完成');

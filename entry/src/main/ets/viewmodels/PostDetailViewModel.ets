@@ -29,12 +29,12 @@ export class PostDetailViewModel {
   }
 
   private convertPostToDetail(post: PostEntity): PostDetailEntity {
-    const firstImage = post.images && post.images.length > 0 ? post.images[0] : null
+    const imageUrls = post.images ? post.images.map(img => img.file_url) : []
     const publishDate = post.create_time ? post.create_time.split(' ')[0] : ''
     
     return {
       id: post.post_id,
-      imageUrl: firstImage?.file_url || '',
+      imageUrls: imageUrls,
       title: post.title,
       description: post.description || '',
       userAvatar: 'https://picsum.photos/60/60',

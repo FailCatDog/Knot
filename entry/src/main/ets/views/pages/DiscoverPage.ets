@@ -2,6 +2,16 @@ import { ImageCard, ImageItem } from '../components/ImageCard'
 import { DiscoverViewModel } from '../../viewmodels/DiscoverViewModel'
 import { PostEntity } from '../../services/api/PostApi'
 
+interface PostDetailParam {
+  post_id: string
+  user_id: number
+  title: string
+  description: string
+  like_count: number
+  create_time: string
+  image_urls: string[]
+}
+
 @Component
 export struct DiscoverPage {
   @State viewModel: DiscoverViewModel = new DiscoverViewModel()
@@ -12,12 +22,17 @@ export struct DiscoverPage {
   private scroller: Scroller = new Scroller()
 
   async aboutToAppear(): Promise<void> {
+    console.log('[DiscoverPage] aboutToAppear 开始')
     await this.loadInitialData()
+    console.log('[DiscoverPage] aboutToAppear 完成')
   }
 
   async loadInitialData(): Promise<void> {
+    console.log('[DiscoverPage] loadInitialData 开始')
     await this.viewModel.loadPosts(true)
+    console.log('[DiscoverPage] loadPosts 完成，帖子数:', this.viewModel.posts.length)
     this.updateImageList()
+    console.log('[DiscoverPage] updateImageList 完成，图片列表数:', this.imageList.length)
   }
 
   async loadMoreData(): Promise<void> {
@@ -165,6 +180,19 @@ export struct DiscoverPage {
 
   handleCardClick(id: string): void {
     console.log('[DiscoverPage] 跳转到帖子详情:', id)
-    this.navPathStack.pushPathByName('PostDetailPage', id, false)
+    const post = this.viewModel.posts.find(p => p.post_id === id)
+    if (post) {
+      const imageUrls = post.images ? post.images.map(img => img.file_url) : []
+      const postData: PostDetailParam = {
+        post_id: post.post_id,
+        user_id: post.user_id,
+        title: post.title,
+        description: post.description || '',
+        like_count: post.like_count,
+        create_time: post.create_time,
+        image_urls: imageUrls
+      }
+      this.navPathStack.pushPathByName('PostDetailPage', postData, false)
+    }
   }
 }

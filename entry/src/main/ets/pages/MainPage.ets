@@ -1,8 +1,6 @@
 import { FollowPage } from '../views/pages/FollowPage'
 import { DiscoverPage } from '../views/pages/DiscoverPage'
-import { MessagePage } from '../views/pages/MessagePage'
 import { ProfilePage } from '../views/pages/ProfilePage'
-import { PostDetailPageBuilder } from './PostDetailPage'
 
 @Entry
 @Component
@@ -11,6 +9,11 @@ struct MainPage {
   private tabsController: TabsController = new TabsController()
   @Provide('NavPathStack') pathStack: NavPathStack = new NavPathStack();
   private lastValidIndex: number = 1
+
+  aboutToAppear(): void {
+    console.log('[MainPage] aboutToAppear called')
+    console.log('[MainPage] pathStack created:', !!this.pathStack)
+  }
 
   build() {
     Navigation(this.pathStack) {
@@ -31,7 +34,6 @@ struct MainPage {
           .tabBar(this.AddTabBuilder())
 
           TabContent() {
-            MessagePage()
           }
           .tabBar(this.TabBuilder('摄像馆', 3))
 
@@ -64,14 +66,6 @@ struct MainPage {
     .width('100%')
     .height('100%')
     .hideTitleBar(true)
-    .navDestination(this.navDestinationBuilder)
-  }
-
-  @Builder
-  navDestinationBuilder(name: string, param: Object) {
-    if (name === 'PostDetailPage') {
-      PostDetailPageBuilder()
-    }
   }
 
   @Builder

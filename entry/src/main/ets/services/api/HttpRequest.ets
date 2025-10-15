@@ -1,6 +1,10 @@
 import http from '@ohos.net.http';
+import util from '@ohos.util';
 import { ApiConstants } from './ApiConstants';
 import { CreatePostParams } from './PostApi';
+import { TokenManager } from '../TokenManager';
+
+export { http };
 
 // 通用API响应结构
 export interface ApiResponse<T> {
@@ -15,15 +19,14 @@ type RequestData =
   | Record<string, string | number | boolean | object | undefined>
   | CreatePostParams;
 
-interface FileUploadData {
-  filename: string;
-  type: string;
-  data: ArrayBuffer;
-}
-
 class HttpRequest {
   private httpRequest: http.HttpRequest;
   private authToken: string = '';
+  private noAuthPaths: string[] = [
+    '/auth/register',
+    '/auth/login',
+    '/posts'
+  ];
 
   constructor() {
     this.httpRequest = http.createHttp();
@@ -33,15 +36,44 @@ class HttpRequest {
     this.authToken = token;
   }
 
-  // 生成请求头
-  private getHeaders(): Record<string, string> {
+  addNoAuthPath(path: string): void {
+    if (!this.noAuthPaths.includes(path)) {
+      this.noAuthPaths.push(path);
+    }
+  }
+
+  removeNoAuthPath(path: string): void {
+    const index = this.noAuthPaths.indexOf(path);
+    if (index > -1) {
+      this.noAuthPaths.splice(index, 1);
+    }
+  }
+
+  private isNoAuthPath(url: string): boolean {
+    return this.noAuthPaths.some(path => url.includes(path));
+  }
+
+  private async getHeaders(url: string): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
+
+    if (!this.isNoAuthPath(url)) {
+      let token = this.authToken;
+      if (!token) {
+        const tokenManager = TokenManager.getInstance();
+        const savedToken = await tokenManager.getToken();
+        if (savedToken) {
+          token = savedToken;
+          this.authToken = token;
+        }
+      }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
     }
+
     return headers;
   }
 
@@ -51,28 +83,39 @@ class HttpRequest {
     url: string,
     data?: D
   ): Promise<ApiResponse<T>> {
-    const fullUrl = `${ApiConstants.BASE_URL}${url}`;
+    // 如果 URL 以 http:// 或 https:// 开头，则直接使用，否则拼接 BASE_URL
+    const fullUrl = url.startsWith('http://') || url.startsWith('https://')
+      ? url
+      : `${ApiConstants.BASE_URL}${url}`;
 
     let options: http.HttpRequestOptions;
 
     const isCreatePost = this.checkIsCreatePostParams(data);
 
+    const headers = await this.getHeaders(fullUrl);
+
     if (isCreatePost) {
       const postData = data as CreatePostParams;
-      const formData = this.createFormData(postData);
-      const headers = this.getHeaders();
-      headers['Content-Type'] = 'multipart/form-data';
+      const multipartData = this.buildMultipartFormData(postData);
+      const multipartHeaders: Record<string, string> = {
+        'Content-Type': 'multipart/form-data',
+        'Accept': 'application/json'
+      };
+      if (headers['Authorization']) {
+        multipartHeaders['Authorization'] = headers['Authorization'];
+      }
+      
       options = {
         method,
-        header: headers,
+        header: multipartHeaders,
         readTimeout: ApiConstants.TIMEOUT,
         connectTimeout: ApiConstants.TIMEOUT,
-        extraData: formData,
+        multiFormDataList: multipartData,
       };
     } else {
       options = {
         method,
-        header: this.getHeaders(),
+        header: headers,
         readTimeout: ApiConstants.TIMEOUT,
         connectTimeout: ApiConstants.TIMEOUT,
         extraData: data ? JSON.stringify(data) : undefined,
@@ -81,9 +124,9 @@ class HttpRequest {
 
     console.log('[HttpRequest] 发起请求:', method, fullUrl);
     console.log('[HttpRequest] 请求头:', JSON.stringify(options.header));
-    console.log('[HttpRequest] 请求数据类型:', isCreatePost ? 'FormData' : 'JSON');
-    if (isCreatePost) {
-      console.log('[HttpRequest] FormData字段:', Object.keys(options.extraData as object));
+    console.log('[HttpRequest] 请求数据类型:', isCreatePost ? 'multipart/form-data' : 'JSON');
+    if (isCreatePost && options.multiFormDataList) {
+      console.log('[HttpRequest] multipart 字段数量:', options.multiFormDataList.length);
     }
 
     try {
@@ -93,19 +136,18 @@ class HttpRequest {
       console.log('[HttpRequest] 响应结果:', response.result);
 
       if (response.responseCode === ApiConstants.HTTP_STATUS.SUCCESS) {
-        // 此处 response.result 为 http.ResponseResult 类型，断言为 string 安全（JSON 响应场景）
         return JSON.parse(response.result as string) as ApiResponse<T>;
       } else {
         console.error('[HttpRequest] 请求失败:', response.responseCode, response.result);
-        // 确保 throw Error 实例（符合 arkts-limited-throw）
         throw new Error(`HTTP ${response.responseCode}: ${response.result || '未知错误'}`);
       }
     } catch (error) {
-      console.error('[HttpRequest] 请求异常:', error);
-      // 统一包装为 Error 实例抛出
       if (error instanceof Error) {
+        console.error('[HttpRequest] 请求异常:', error.message);
+        console.error('[HttpRequest] 错误堆栈:', error.stack);
         throw error;
       } else {
+        console.error('[HttpRequest] 请求异常:', JSON.stringify(error));
         throw new Error(String(error));
       }
     }
@@ -119,31 +161,62 @@ class HttpRequest {
     return typeof obj.title === 'string' && Array.isArray(obj.imageFiles);
   }
 
-  private createFormData(data: CreatePostParams): object {
-    const formData: Record<string, string | FileUploadData[]> = {};
+  /**
+   * 构建 multipart/form-data 格式的数据
+   * 用于文件上传（多图片上传）
+   */
+  private buildMultipartFormData(data: CreatePostParams): http.MultiFormData[] {
+    const formData: http.MultiFormData[] = [];
 
-    if (data.title) formData.title = data.title;
-    if (data.description) formData.description = data.description;
-
-    if (data.tags && data.tags.length > 0) {
-      formData.tags = JSON.stringify(data.tags);
-    }
-
-    if (data.imageFiles && data.imageFiles.length > 0) {
-      const imageFilesArray: FileUploadData[] = [];
-      data.imageFiles.forEach((buffer: ArrayBuffer, index: number) => {
-        console.log('[HttpRequest] 添加图片文件:', index, 'buffer大小:', buffer.byteLength);
-        imageFilesArray.push({
-          filename: `image_${index}.jpg`,
-          type: 'image/jpeg',
-          data: buffer,
-        });
+    // 添加文本字段：title
+    if (data.title) {
+      formData.push({
+        name: 'title',
+        contentType: 'text/plain',
+        data: new util.TextEncoder().encode(data.title).buffer
       });
-      formData.imageFiles = imageFilesArray;
-      console.log('[HttpRequest] imageFiles数组长度:', imageFilesArray.length);
+      console.log('[HttpRequest] 添加字段 title:', data.title);
     }
 
-    console.log('[HttpRequest] FormData创建完成，字段:', Object.keys(formData));
+    // 添加文本字段：description
+    if (data.description) {
+      formData.push({
+        name: 'description',
+        contentType: 'text/plain',
+        data: new util.TextEncoder().encode(data.description).buffer
+      });
+      console.log('[HttpRequest] 添加字段 description:', data.description);
+    }
+
+    // 添加文本字段：tags（转为 JSON 字符串）
+    if (data.tags && data.tags.length > 0) {
+      formData.push({
+        name: 'tags',
+        contentType: 'text/plain',
+        data: new util.TextEncoder().encode(JSON.stringify(data.tags)).buffer
+      });
+      console.log('[HttpRequest] 添加字段 tags:', data.tags);
+    }
+
+    // 添加文件字段：imageFiles（多个文件使用相同的 name）
+    if (data.imageFiles && data.imageFiles.length > 0) {
+      data.imageFiles.forEach((buffer: ArrayBuffer, index: number) => {
+        // 生成文件名（根据实际情况可以优化，比如传入真实文件名）
+        const fileName = `image_${index}.jpg`;
+        
+        formData.push({
+          name: 'imageFiles',  // 使用相同的字段名，后端会接收为数组
+          contentType: 'image/jpeg',  // MIME 类型，可以根据实际图片格式调整
+          remoteFileName: fileName,
+          data: buffer  // 直接使用 ArrayBuffer，不转 Base64
+        });
+        
+        console.log(`[HttpRequest] 添加文件 [${index}]: ${fileName}, 大小: ${buffer.byteLength} bytes`);
+      });
+      console.log('[HttpRequest] 总共添加', data.imageFiles.length, '个文件');
+    }
+
+    console.log('[HttpRequest] multipart/form-data 构建完成，总字段数:', formData.length);
     return formData;
   }
 
