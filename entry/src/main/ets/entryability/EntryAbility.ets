@@ -15,15 +15,12 @@ export default class EntryAbility extends UIAbility {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onDestroy');
   }
 
-  onWindowStageCreate(windowStage: window.WindowStage): void {
+  async onWindowStageCreate(windowStage: window.WindowStage): Promise<void> {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
 
     const tokenManager = TokenManager.getInstance();
-    tokenManager.init(this.context).then(() => {
-      hilog.info(DOMAIN, 'testTag', 'TokenManager initialized successfully');
-    }).catch((error: Error) => {
-      hilog.error(DOMAIN, 'testTag', 'TokenManager initialization failed: %{public}s', error.message);
-    });
+    await tokenManager.init(this.context);
+    hilog.info(DOMAIN, 'testTag', 'TokenManager initialized successfully');
 
     windowStage.loadContent('pages/MainPage', (err) => {
       if (err.code) {

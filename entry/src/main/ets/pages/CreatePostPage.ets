@@ -298,6 +298,9 @@ struct CreatePostPage {
 
   async handleSubmit() {
     if (!this.canSubmit()) return;
-    await this.viewModel.submitPost();
+    const success = await this.viewModel.submitPost();
+    if (success) {
+      this.navPathStack.pop();
+    }
   }
 }
