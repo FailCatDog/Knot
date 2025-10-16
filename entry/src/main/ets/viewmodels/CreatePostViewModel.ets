@@ -1,6 +1,5 @@
 import { submitImage, type CreatePostParams, type SubmitImageResponse } from '../services/api/PostApi';
 import promptAction from '@ohos.promptAction';
-import { router } from '@kit.ArkUI';
 import { fileIo } from '@kit.CoreFileKit';
 
 export class CreatePostViewModel {
@@ -48,8 +47,8 @@ export class CreatePostViewModel {
     return true;
   }
 
-  async submitPost(): Promise<void> {
-    if (!this.validate() || this.isSubmitting) return;
+  async submitPost(): Promise<boolean> {
+    if (!this.validate() || this.isSubmitting) return false;
 
     console.log('[CreatePostViewModel] 开始提交帖子');
     this.isSubmitting = true;
@@ -97,13 +96,14 @@ export class CreatePostViewModel {
     if (response.success && response.data) {
       console.log('[CreatePostViewModel] 发布成功');
       this.showSuccess('发布成功');
-      router.back();
+      this.isSubmitting = false;
+      return true;
     } else {
       console.log('[CreatePostViewModel] 发布失败:', response.message);
       this.showError(response.message || '发布失败');
+      this.isSubmitting = false;
+      return false;
     }
-
-    this.isSubmitting = false;
   }
 
   // 重置表单

@@ -85,7 +85,7 @@ export const submitImage = async (
     tags: param.tags
   }));
   return httpRequest.post<SubmitImageResponse, CreatePostParams>(
-    'http://10.34.31.81:9001/api/v1/posts',
+    ApiConstants.ENDPOINTS.CREATE_POST,
     param
   )
 }
