@@ -5,7 +5,10 @@ import { ApiResponse } from './HttpRequest'
 export interface RegisterRequest extends Record<string, string | number | boolean | object | undefined> {
   username: string;
   password: string;
-  email: string;
+  real_name: string;
+  phone: string;
+  email?: string;
+  role?: string;
 }
 
 export interface LoginRequest extends Record<string, string | number | boolean | object | undefined> {
@@ -64,6 +67,56 @@ export interface UpdateUserInfoRequest extends Record<string, string | number | 
   location?: string;
 }
 
+// 帖子图片接口
+export interface PostImage {
+  id: number;
+  image_id: string;
+  post_id: number;
+  user_id: number;
+  file_url: string;
+  thumbnail_url: string;
+  width: number;
+  height: number;
+  file_size: number;
+  mime_type: string;
+  display_order: number;
+  create_time: number;
+  update_time: number;
+}
+
+// 帖子接口
+export interface Post {
+  id: number;
+  post_id: string;
+  user_id: number;
+  title: string;
+  description: string;
+  cover_image_url?: string;
+  image_count: number;
+  images?: PostImage[];
+  like_count: number;
+  favorite_count: number;
+  view_count: number;
+  status: string;
+  create_time: number;
+  update_time: number;
+}
+
+// 用户帖子列表响应接口
+export interface UserPostsResponse {
+  page: number;
+  page_size: number;
+  total: number;
+  posts: Post[];
+}
+
+// 获取用户帖子列表请求参数
+export interface GetUserPostsRequest {
+  user_id: number;
+  page?: number;
+  pageSize?: number;
+}
+
 export const register = async (
   param: RegisterRequest
 ): Promise<ApiResponse<RegisterResponse>> => {
@@ -111,4 +164,17 @@ export const updateUserInfo = async (
     ApiConstants.USER_ENDPOINTS.UPDATE_USER_INFO,
     param
   )
+}
+
+// 获取用户帖子列表
+export const getUserPosts = async (
+  param: GetUserPostsRequest
+): Promise<ApiResponse<UserPostsResponse>> => {
+  const user_id: number = param.user_id;
+  const page: number = param.page || 1;
+  const pageSize: number = param.pageSize || 20;
+  const url: string = ApiConstants.ENDPOINTS.GET_USER_POSTS.replace('{user_id}', user_id.toString());
+  const queryString: string = `page=${page}&pageSize=${pageSize}`;
+  
+  return httpRequest.get<UserPostsResponse>(`${url}?${queryString}`);
 }

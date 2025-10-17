@@ -89,3 +89,17 @@ device_config.json
 html-report/
 # 性能分析文件
 *.trace
+
+# === 项目配置文件（不提交）===
+.clang-format
+AppScope/
+build-profile.json5
+code-linter.json5
+entry/build-profile.json5
+entry/hvigorfile.ts
+entry/obfuscation-rules.txt
+entry/oh-package.json5
+hvigor/
+hvigorfile.ts
+oh-package-lock.json5
+oh-package.json5

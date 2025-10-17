@@ -51,8 +51,8 @@ export class ApiConstants {
     REGISTER: '/auth/register',
     LOGIN: '/auth/login',
     GET_USER_INFO: '/users/profile',
-    UPDATE_USER_INFO: '/users/info',
-    CHANGE_PASSWORD: '/users/password'
+    UPDATE_USER_INFO: '/users/profile',
+    CHANGE_PASSWORD: '/auth/password'
   };
 
   static readonly HTTP_STATUS: HttpStatus = {

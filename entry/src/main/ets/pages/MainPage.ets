@@ -1,5 +1,6 @@
 import { FollowPage } from '../views/pages/FollowPage'
 import { DiscoverPage } from '../views/pages/DiscoverPage'
+import { GalleryPage } from '../views/pages/GalleryPage'
 import { ProfilePage } from '../views/pages/ProfilePage'
 
 @Entry
@@ -34,6 +35,7 @@ struct MainPage {
           .tabBar(this.AddTabBuilder())
 
           TabContent() {
+            GalleryPage()
           }
           .tabBar(this.TabBuilder('摄像馆', 3))
 

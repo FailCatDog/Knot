@@ -18,29 +18,57 @@ export struct SettingPage {
   }
 
   build() {
-    Column() {
-      Row() {
-        Text('设置')
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .fontColor('#1A1A1A')
-          .width('100%')
-          .textAlign(TextAlign.Center)
-      }
-      .width('100%')
-      .height(56)
-      .backgroundColor('#FFFFFF')
+    NavDestination() {
+      Column() {
+        Row() {
+          Image($r('app.media.ic_back'))
+            .width(24)
+            .height(24)
+            .margin({ left: 16 })
+            .onClick(() => {
+              this.pathStack.pop()
+            })
+
+          Text('设置')
+            .fontSize(20)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#1A1A1A')
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
+
+          Blank()
+            .width(40)
+        }
+        .width('100%')
+        .height(56)
+        .backgroundColor('#FFFFFF')
 
       List() {
         ListItem() {
-          this.buildSettingItem('个人资料', () => {
+          this.buildSettingItem('个人资料', async () => {
+            const tokenManager = TokenManager.getInstance()
+            const token = await tokenManager.getToken()
+            
+            if (!token) {
+              prompt.showToast({ message: '请先登录' })
+              return
+            }
+            
             this.pathStack.pushPathByName('EditProfilePage', null, false)
           })
         }
         .height('auto')
 
         ListItem() {
-          this.buildSettingItem('修改密码', () => {
+          this.buildSettingItem('修改密码', async () => {
+            const tokenManager = TokenManager.getInstance()
+            const token = await tokenManager.getToken()
+            
+            if (!token) {
+              prompt.showToast({ message: '请先登录' })
+              return
+            }
+            
             this.pathStack.pushPathByName('ChangePasswordPage', null, false)
           })
         }
@@ -103,14 +131,16 @@ export struct SettingPage {
         color: '#E5E5E5',
         startMargin: 16
       })
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#F5F5F5')
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#F5F5F5')
+    .hideTitleBar(true)
   }
 
   @Builder
-  buildSettingItem(title: string, onClick: () => void) {
+  buildSettingItem(title: string, onClick: () => void | Promise<void>) {
     Row() {
       Text(title)
         .fontSize(16)

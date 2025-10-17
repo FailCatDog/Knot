@@ -138,8 +138,17 @@ class HttpRequest {
       if (response.responseCode === ApiConstants.HTTP_STATUS.SUCCESS) {
         return JSON.parse(response.result as string) as ApiResponse<T>;
       } else {
-        console.error('[HttpRequest] 请求失败:', response.responseCode, response.result);
-        throw new Error(`HTTP ${response.responseCode}: ${response.result || '未知错误'}`);
+        // 尝试解析错误响应体，可能包含详细的错误信息
+        try {
+          const errorResponse = JSON.parse(response.result as string) as ApiResponse<T>;
+          console.error('[HttpRequest] 请求失败:', response.responseCode, errorResponse.message);
+          // 返回解析后的错误响应，而不是抛出异常
+          return errorResponse;
+        } catch (parseError) {
+          // 如果无法解析响应体，则抛出原始错误
+          console.error('[HttpRequest] 无法解析错误响应:', response.result);
+          throw new Error(`HTTP ${response.responseCode}: ${response.result || '未知错误'}`);
+        }
       }
     } catch (error) {
       if (error instanceof Error) {
