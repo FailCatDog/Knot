@@ -1,6 +1,7 @@
 import { getPosts, type PostEntity } from '../services/api/PostApi';
 import promptAction from '@ohos.promptAction';
 
+@Observed
 export class DiscoverViewModel {
   posts: PostEntity[] = [];
   currentPage: number = 1;

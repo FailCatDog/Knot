@@ -1,60 +1,34 @@
-import { login } from '../../services/api/UserApi'
 import { AuthPageType } from './ProfilePage'
 import { http } from '../../services/api/HttpRequest'
-import { TokenManager } from '../../services/TokenManager'
 import { common } from '@kit.AbilityKit'
+import { AuthViewModel } from '../../viewmodels/AuthViewModel'
 
 @Component
 export struct LoginPage {
+  @State viewModel: AuthViewModel = new AuthViewModel()
   @State username: string = 'zhangsan'
   @State password: string = 'password123'
-  @State isLoading: boolean = false
-  @State errorMessage: string = ''
   @State testResult: string = ''
 
   @Link currentPage: AuthPageType
   @Consume('NavPathStack') pathStack: NavPathStack
 
   private async handleLogin() {
-    if (!this.username || !this.password) {
-      this.errorMessage = '请输入用户名和密码'
-      return
-    }
-
-    this.isLoading = true
-    this.errorMessage = ''
-
-    try {
-      const response = await login({
-        username: this.username,
-        password: this.password
-      })
-
-      if (response.success) {
-        const tokenManager = TokenManager.getInstance()
-        await tokenManager.saveToken(response.data.access_token)
-        this.errorMessage = '登录成功'
-
-        try {
-          let context = getContext(this) as common.UIAbilityContext;
-          let eventHub = context.eventHub;
-          eventHub.emit('userLoginStatusChanged', {
-            isLoggedIn: true,
-            userInfo: response.data.user
-          });
-        } catch (error) {
-          console.error('发送事件失败:', error);
-        }
-
-        this.pathStack.clear()
-      } else {
-        this.errorMessage = response.message || '登录失败'
+    const result = await this.viewModel.login(this.username, this.password)
+    
+    if (result.success && result.userInfo) {
+      try {
+        let context = getContext(this) as common.UIAbilityContext
+        let eventHub = context.eventHub
+        eventHub.emit('userLoginStatusChanged', {
+          isLoggedIn: true,
+          userInfo: result.userInfo
+        })
+      } catch (error) {
+        console.error('[LoginPage] 发送事件失败:', error)
       }
-    } catch (error) {
-      this.errorMessage = (error as Error).message || '网络错误，请稍后重试'
-      console.error('登录异常', (error as Error).message)
-    } finally {
-      this.isLoading = false
+      
+      this.pathStack.clear()
     }
   }
 
@@ -162,13 +136,9 @@ export struct LoginPage {
 
   build() {
     Column({ space: 24 }) {
-      Text('登录')
-        .fontSize(28)
-        .fontWeight(FontWeight.Bold)
-        .margin({ top: 100, bottom: 20 })
-
       Column({ space: 16 }) {
         TextInput({ text: this.username, placeholder: '请输入用户名' })
+          .margin({ top: 100 })
           .onChange((value: string) => {
             this.username = value
           })
@@ -192,8 +162,8 @@ export struct LoginPage {
           .padding({ left: 16, right: 16 })
           .type(InputType.Password)
 
-        if (this.errorMessage) {
-          Text(this.errorMessage)
+        if (this.viewModel.loginErrorMessage) {
+          Text(this.viewModel.loginErrorMessage)
             .fontSize(14)
             .fontColor('#FF0000')
             .textAlign(TextAlign.Center)
@@ -208,9 +178,9 @@ export struct LoginPage {
           .borderRadius(24)
           .backgroundColor('#FFDD0223')
           .fontColor('#FFFFFF')
-          .enabled(!this.isLoading)
+          .enabled(!this.viewModel.isLoginLoading)
 
-        if (this.isLoading) {
+        if (this.viewModel.isLoginLoading) {
           Progress({ value: 0, total: 100 })
             .width('80%')
             .color('#FFDD0223')

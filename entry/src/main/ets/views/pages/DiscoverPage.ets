@@ -22,17 +22,12 @@ export struct DiscoverPage {
   private scroller: Scroller = new Scroller()
 
   async aboutToAppear(): Promise<void> {
-    console.log('[DiscoverPage] aboutToAppear 开始')
     await this.loadInitialData()
-    console.log('[DiscoverPage] aboutToAppear 完成')
   }
 
   async loadInitialData(): Promise<void> {
-    console.log('[DiscoverPage] loadInitialData 开始')
     await this.viewModel.loadPosts(true)
-    console.log('[DiscoverPage] loadPosts 完成，帖子数:', this.viewModel.posts.length)
     this.updateImageList()
-    console.log('[DiscoverPage] updateImageList 完成，图片列表数:', this.imageList.length)
   }
 
   async loadMoreData(): Promise<void> {
@@ -178,8 +173,21 @@ export struct DiscoverPage {
     console.log(`关注用户: ${id}`)
   }
 
+  // 将时间戳转换为日期字符串
+  private formatTimestamp(timestamp: string | number): string {
+    // 处理字符串或数字类型的时间戳
+    const ts = typeof timestamp === 'string' ? parseInt(timestamp) : timestamp
+    const date = new Date(ts * 1000) // 转换为毫秒
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  }
+
   handleCardClick(id: string): void {
-    console.log('[DiscoverPage] 跳转到帖子详情:', id)
     const post = this.viewModel.posts.find(p => p.post_id === id)
     if (post) {
       const imageUrls = post.images ? post.images.map(img => img.file_url) : []
@@ -189,7 +197,7 @@ export struct DiscoverPage {
         title: post.title,
         description: post.description || '',
         like_count: post.like_count,
-        create_time: post.create_time,
+        create_time: this.formatTimestamp(post.create_time),
         image_urls: imageUrls
       }
       this.navPathStack.pushPathByName('PostDetailPage', postData, false)

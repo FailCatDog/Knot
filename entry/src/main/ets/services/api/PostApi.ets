@@ -34,8 +34,8 @@ export interface ImageEntity {
   favorite_count: number;
   view_count: number;
   status: "APPROVED" | "PENDING" | "REJECTED";
-  create_time: number;
-  update_time: number;
+  create_time: number;  // 已经是 number，保持不变
+  update_time: number;  // 已经是 number，保持不变
 }
 export interface PostEntity {
   id: number;
@@ -50,8 +50,8 @@ export interface PostEntity {
   share_count: number;
   comment_count: number;
   status: "APPROVED" | "PENDING" | "REJECTED";
-  create_time: string;
-  update_time: string;
+  create_time: number;  // 修正：后端返回的是时间戳数字
+  update_time: number;  // 修正：后端返回的是时间戳数字
   images: ImageEntity[];
   tags: string[];
 }
