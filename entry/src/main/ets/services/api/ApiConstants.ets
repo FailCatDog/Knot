@@ -52,7 +52,7 @@ export class ApiConstants {
     LOGIN: '/auth/login',
     GET_USER_INFO: '/users/profile',
     UPDATE_USER_INFO: '/users/info',
-    CHANGE_PASSWORD: '/users/password'
+    CHANGE_PASSWORD: '/auth/password'
   };
 
   static readonly HTTP_STATUS: HttpStatus = {

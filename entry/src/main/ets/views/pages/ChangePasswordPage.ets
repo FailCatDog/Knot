@@ -1,5 +1,5 @@
 import prompt from '@ohos.prompt'
-import { changePassword, ChangePasswordRequest, getCurrentUserInfo } from '../../services/api/UserApi'
+import { ChangePasswordViewModel } from '../../viewmodels/ChangePasswordViewModel'
 
 @Builder
 export function ChangePasswordPageBuilder() {
@@ -9,18 +9,12 @@ export function ChangePasswordPageBuilder() {
 @Component
 export struct ChangePasswordPage {
   @Consume('NavPathStack') pathStack: NavPathStack
-  @State oldPassword: string = ''
-  @State newPassword: string = ''
-  @State confirmPassword: string = ''
-  @State isSubmitting: boolean = false
-  @State userId: number = 0
+  @State viewModel: ChangePasswordViewModel = new ChangePasswordViewModel()
 
   async aboutToAppear() {
-    const response = await getCurrentUserInfo()
-    if (response.success && response.data) {
-      this.userId = response.data.id
-    } else {
-      prompt.showToast({ message: '获取用户信息失败' })
+    const result = await this.viewModel.initialize()
+    if (!result.success) {
+      prompt.showToast({ message: result.message })
       this.pathStack.pop()
     }
   }
@@ -51,47 +45,48 @@ export struct ChangePasswordPage {
   }
 
   build() {
-    Column() {
-      Row() {
-        Image($r('app.media.ic_back'))
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .onClick(() => {
-            this.pathStack.pop()
-          })
+    NavDestination() {
+      Column() {
+        Row() {
+          Image($r('app.media.ic_back'))
+            .width(24)
+            .height(24)
+            .margin({ left: 16 })
+            .onClick(() => {
+              this.pathStack.pop()
+            })
 
-        Text('修改密码')
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .fontColor('#1A1A1A')
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
+          Text('修改密码')
+            .fontSize(20)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#1A1A1A')
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
 
-        Blank()
-          .width(40)
-      }
-      .width('100%')
-      .height(56)
-      .backgroundColor('#FFFFFF')
+          Blank()
+            .width(40)
+        }
+        .width('100%')
+        .height(56)
+        .backgroundColor('#FFFFFF')
 
       Column() {
         List() {
           ListItem() {
-            this.buildPasswordInput('旧密码', '请输入旧密码', this.oldPassword, (value: string) => {
-              this.oldPassword = value
+            this.buildPasswordInput('旧密码', '请输入旧密码', this.viewModel.oldPassword, (value: string) => {
+              this.viewModel.oldPassword = value
             })
           }
 
           ListItem() {
-            this.buildPasswordInput('新密码', '请输入新密码', this.newPassword, (value: string) => {
-              this.newPassword = value
+            this.buildPasswordInput('新密码', '请输入新密码', this.viewModel.newPassword, (value: string) => {
+              this.viewModel.newPassword = value
             })
           }
 
           ListItem() {
-            this.buildPasswordInput('确认密码', '请再次输入新密码', this.confirmPassword, (value: string) => {
-              this.confirmPassword = value
+            this.buildPasswordInput('确认密码', '请再次输入新密码', this.viewModel.confirmPassword, (value: string) => {
+              this.viewModel.confirmPassword = value
             })
           }
 
@@ -125,7 +120,7 @@ export struct ChangePasswordPage {
             .fontColor('#FFFFFF')
             .backgroundColor('#ffdd0223')
             .borderRadius(24)
-            .enabled(!this.isSubmitting)
+            .enabled(!this.viewModel.isSubmitting)
             .onClick(() => {
               this.handleChangePassword()
             })
@@ -138,70 +133,23 @@ export struct ChangePasswordPage {
       .layoutWeight(1)
       .backgroundColor('#F5F5F5')
 
-      Blank()
+        Blank()
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#F5F5F5')
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#F5F5F5')
+    .hideTitleBar(true)
   }
 
   private async handleChangePassword() {
-    if (!this.oldPassword) {
-      prompt.showToast({ message: '请输入旧密码' })
-      return
-    }
-
-    if (!this.newPassword) {
-      prompt.showToast({ message: '请输入新密码' })
-      return
-    }
-
-    if (this.newPassword.length < 6 || this.newPassword.length > 100) {
-      prompt.showToast({ message: '新密码长度需在6-100个字符之间' })
-      return
-    }
-
-    if (this.newPassword !== this.confirmPassword) {
-      prompt.showToast({ message: '两次输入的新密码不一致' })
-      return
-    }
-
-    if (this.oldPassword === this.newPassword) {
-      prompt.showToast({ message: '新密码不能与旧密码相同' })
-      return
-    }
-
-    try {
-      this.isSubmitting = true
-
-      const param: ChangePasswordRequest = {
-        user_id: this.userId,
-        old_password: this.oldPassword,
-        new_password: this.newPassword
-      }
-
-      const response = await changePassword(param)
-
-      if (response.success) {
-        prompt.showToast({ message: '密码修改成功' })
-        this.pathStack.pop()
-      } else {
-        switch (response.message) {
-          case '旧密码不正确':
-            prompt.showToast({ message: '旧密码不正确' })
-            break
-          case '新密码格式不正确':
-            prompt.showToast({ message: '新密码格式不正确' })
-            break
-          default:
-            prompt.showToast({ message: response.message || '密码修改失败' })
-        }
-      }
-    } catch (error) {
-      console.error('修改密码失败:', error)
-      prompt.showToast({ message: '网络请求失败，请稍后重试' })
-    } finally {
-      this.isSubmitting = false
+    const result = await this.viewModel.changePassword()
+    
+    if (result.success) {
+      prompt.showToast({ message: result.message })
+      this.pathStack.pop()
+    } else {
+      prompt.showToast({ message: result.message })
     }
   }
 }

@@ -1,9 +1,9 @@
 import { ImageCard, ImageItem } from '../components/ImageCard'
-import { getCurrentUserInfo,UserInfo } from '../../services/api/UserApi'
-import { TokenManager } from '../../services/TokenManager'
+import { UserInfo } from '../../services/api/UserApi'
 import { common } from '@kit.AbilityKit'
 import { LoginPage } from './LoginPage'
 import { RegisterPage } from './RegisterPage'
+import { ProfileViewModel } from '../../viewmodels/ProfileViewModel'
 
 export enum AuthPageType {
   LOGIN = 0,
@@ -19,117 +19,58 @@ interface UserLogoutStatusChangedData {
   isLoggedIn: boolean;
 }
 
+interface PostDetailParam {
+  post_id: string
+  user_id: number
+  title: string
+  description: string
+  like_count: number
+  create_time: string
+  image_urls: string[]
+}
+
 @Component
 export struct ProfilePage {
-  @State isUserLoggedIn: boolean = false;
-  @State currentAuthPage: AuthPageType = AuthPageType.LOGIN;
-  @State showAuthView: boolean = false;
-  @State userInfo: UserInfo = {
-    id: 0,
-    user_id: '',
-    username: '',
-    email: '',
-    phone: '',
-    real_name: '',
-    avatar_url: '',
-    bio: '',
-    location: '',
-    gender: '',
-    role: '',
-    status: '',
-    create_time: 0,
-    update_time: 0,
-    device_count: 0
-  };
-  @State isLoading: boolean = true;
-
-  @State currentIndex: number = 0;
-  @State workLikedItems: Set<string> = new Set()
-  @State workLikeCounts: Map<string, number> = new Map()
-  @State workItems: ImageItem[] = []
-
-  @State likeLikedItems: Set<string> = new Set()
-  @State likeLikeCounts: Map<string, number> = new Map()
-  @State likeItems: ImageItem[] = []
+  @Consume('NavPathStack') pathStack: NavPathStack
+  @State viewModel: ProfileViewModel = new ProfileViewModel()
+  @State currentAuthPage: AuthPageType = AuthPageType.LOGIN
+  @State showAuthView: boolean = false
+  @State currentIndex: number = 0
 
   aboutToAppear(): void {
-    this.checkUserLoginStatus();
+    // 使用ViewModel检查登录状态
+    this.viewModel.checkUserLoginStatus()
 
     try {
-      let context = getContext(this) as common.UIAbilityContext;
-      let eventHub = context.eventHub;
+      let context = getContext(this) as common.UIAbilityContext
+      let eventHub = context.eventHub
+      
       eventHub.on('userLoginStatusChanged', (data: UserLoginStatusChangedData) => {
-        this.isUserLoggedIn = data.isLoggedIn;
         if (data.userInfo) {
-          this.userInfo = data.userInfo;
+          this.viewModel.updateUserInfo(data.userInfo)
         }
-        this.showAuthView = false;
-      });
+        this.showAuthView = false
+      })
       
       eventHub.on('userLogoutStatusChanged', (data: UserLogoutStatusChangedData) => {
-        this.isUserLoggedIn = false;
-        this.showAuthView = false;
-        this.userInfo = {
-          id: 0,
-          user_id: '',
-          username: '',
-          email: '',
-          phone: '',
-          real_name: '',
-          avatar_url: '',
-          bio: '',
-          location: '',
-          gender: '',
-          role: '',
-          status: '',
-          create_time: 0,
-          update_time: 0,
-          device_count: 0
-        };
-      });
+        this.viewModel.logout()
+        this.showAuthView = false
+      })
     } catch (error) {
-      console.error('监听事件失败:', error);
+      console.error('[ProfilePage] 监听事件失败:', error)
     }
   }
 
   aboutToDisappear(): void {
     try {
-      let context = getContext(this) as common.UIAbilityContext;
-      let eventHub = context.eventHub;
-      eventHub.off('userLoginStatusChanged');
-      eventHub.off('userLogoutStatusChanged');
+      let context = getContext(this) as common.UIAbilityContext
+      let eventHub = context.eventHub
+      eventHub.off('userLoginStatusChanged')
+      eventHub.off('userLogoutStatusChanged')
     } catch (error) {
-      console.error('取消监听事件失败:', error);
+      console.error('[ProfilePage] 取消监听事件失败:', error)
     }
   }
-
-  private async checkUserLoginStatus() {
-    this.isLoading = true;
-    try {
-      const tokenManager = TokenManager.getInstance();
-      const token = await tokenManager.getToken();
-
-      if (token) {
-        const response = await getCurrentUserInfo();
-        if (response.success && response.data) {
-          this.userInfo = response.data;
-          this.isUserLoggedIn = true;
-        } else {
-          await tokenManager.clearToken();
-          this.isUserLoggedIn = false;
-        }
-      } else {
-        this.isUserLoggedIn = false;
-      }
-    } catch (error) {
-      console.error('检查用户登录状态失败:', error);
-      this.isUserLoggedIn = false;
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  @Consume('NavPathStack') pathStack: NavPathStack
 
   @Builder
   buildWelcomeView() {
@@ -195,24 +136,9 @@ export struct ProfilePage {
     .backgroundColor('#FFFFFF')
   }
 
-  isWorkItemLiked(id: string): boolean {
-    return this.workLikedItems.has(id)
-  }
-
-  getWorkItemLikeCount(id: string): number {
-    return this.workLikeCounts.get(id) || 0
-  }
-
-  isLikeItemLiked(id: string): boolean {
-    return this.likeLikedItems.has(id)
-  }
-
-  getLikeItemLikeCount(id: string): number {
-    return this.likeLikeCounts.get(id) || 0
-  }
 
   build() {
-    if (!this.isUserLoggedIn && !this.isLoading) {
+    if (!this.viewModel.isUserLoggedIn && !this.viewModel.isLoading) {
       if (this.showAuthView) {
         Column() {
           Row() {
@@ -290,7 +216,7 @@ export struct ProfilePage {
         .clip(true);
 
         Column() {
-          if (this.isLoading) {
+          if (this.viewModel.isLoading) {
             Column() {
               Text('加载中...')
                 .fontSize(16)
@@ -309,7 +235,7 @@ export struct ProfilePage {
         .width('100%')
         .borderRadius({ topLeft: 16, topRight: 16 });
 
-        if (this.isUserLoggedIn) {
+        if (this.viewModel.isUserLoggedIn) {
           Tabs({ index: this.currentIndex, controller: new TabsController() }) {
             TabContent() {
               this.WorkContent()
@@ -319,7 +245,7 @@ export struct ProfilePage {
             TabContent() {
               this.LikeContent()
             }
-            .tabBar(this.TabBuilder('喜欢', 1))
+            .tabBar(this.TabBuilder('收藏', 1))
           }
           .barPosition(BarPosition.Start)
           .onChange((index: number) => {
@@ -339,27 +265,65 @@ export struct ProfilePage {
   }
 
 
+
   @Builder
   renderLoggedInView() {
     Row() {
-      Image(this.userInfo.avatar_url && this.userInfo.avatar_url.trim() !== '' ? this.userInfo.avatar_url : $r('app.media.head'))
-        .width(80)
-        .height(80)
-        .borderRadius(40)
+      Image(this.viewModel.userInfo.avatar_url && this.viewModel.userInfo.avatar_url.trim() !== '' ? this.viewModel.userInfo.avatar_url : $r('app.media.head'))
+        .width(90)
+        .height(90)
+        .borderRadius(45)
         .border({ width: 3, color: '#fff' })
-        .margin({ right: 12, top: -30 })
+        .margin({ right: 14, top: -35 })
         .alt($r('app.media.head'))
 
       Column() {
-        Text(this.userInfo.username)
+        Text(this.viewModel.userInfo.username)
           .fontSize(18)
           .fontColor('#333')
           .fontWeight(FontWeight.Bold)
 
-        Text(this.userInfo.bio && this.userInfo.bio.trim() !== '' ? this.userInfo.bio : '暂无个人简介')
+        Text(this.viewModel.userInfo.bio && this.viewModel.userInfo.bio.trim() !== '' ? this.viewModel.userInfo.bio : '暂无个人简介')
           .fontSize(14)
           .fontColor('#999')
           .margin({ top: 4 })
+
+        // 地址和性别信息
+        Row({ space: 16 }) {
+          // 地址信息
+          if (this.viewModel.userInfo.location && this.viewModel.userInfo.location.trim() !== '') {
+            Row({ space: 6 }) {
+              Image($r('app.media.ic_profilePage_location'))
+                .width(18)
+                .height(18)
+                .fillColor('#666')
+              
+              Text(this.viewModel.userInfo.location)
+                .fontSize(13)
+                .fontColor('#666')
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+            }
+            .alignItems(VerticalAlign.Center)
+          }
+
+          // 性别信息
+          if (this.viewModel.userInfo.gender && this.viewModel.userInfo.gender.trim() !== '') {
+            Row({ space: 6 }) {
+              Image($r('app.media.ic_profilePage_stats'))
+                .width(18)
+                .height(18)
+                .fillColor('#666')
+              
+              Text(this.viewModel.getGenderText(this.viewModel.userInfo.gender))
+                .fontSize(13)
+                .fontColor('#666')
+            }
+            .alignItems(VerticalAlign.Center)
+          }
+        }
+        .margin({ top: 8 })
+        .width('100%')
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
@@ -391,46 +355,146 @@ export struct ProfilePage {
     .alignItems(HorizontalAlign.Center)
   }
 
+  // 将时间戳转换为日期字符串
+  private formatTimestamp(timestamp: number): string {
+    const date = new Date(timestamp * 1000) // 转换为毫秒
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  }
+
+  // 处理作品卡片点击
+  handleWorkCardClick(id: string): void {
+    const post = this.viewModel.workPosts.find(p => p.post_id === id)
+    if (post) {
+      const imageUrls = post.images ? post.images.map(img => img.file_url) : []
+      const postData: PostDetailParam = {
+        post_id: post.post_id,
+        user_id: post.user_id,
+        title: post.title,
+        description: post.description || '',
+        like_count: post.like_count,
+        create_time: this.formatTimestamp(post.create_time),
+        image_urls: imageUrls
+      }
+      this.pathStack.pushPathByName('PostDetailPage', postData, false)
+    }
+  }
+
+  // 处理收藏卡片点击
+  handleLikeCardClick(id: string): void {
+    // 目前收藏功能尚未实现，暂时不跳转
+    // TODO: 实现收藏功能后添加跳转逻辑
+  }
+
   @Builder
   WorkContent() {
-    WaterFlow() {
-      ForEach(this.workItems, (item: ImageItem, index: number) => {
-        FlowItem() {
-          ImageCard({
-            item: {
-              id: item.id,
-              imageUrl: item.imageUrl,
-              title: item.title,
-              userAvatar: item.userAvatar,
-              userId: item.userId,
-              description: item.description,
-              likeCount: this.getWorkItemLikeCount(item.id),
-              isLiked: this.isWorkItemLiked(item.id),
-              imageHeight: item.imageHeight
-            },
-            onLikeClick: (id: string) => this.handleWorkLikeClick(id),
+    if (this.viewModel.workItems.length === 0 && !this.viewModel.workLoading) {
+      // 空状态
+      Column() {
+        Image($r('app.media.ic_discover'))
+          .width(80)
+          .height(80)
+          .fillColor('#CCCCCC')
+          .margin({ bottom: 16 })
+
+        Text('还没有发布作品')
+          .fontSize(16)
+          .fontColor('#999999')
+          .margin({ bottom: 8 })
+
+        Text('快去分享你的精彩瞬间吧')
+          .fontSize(14)
+          .fontColor('#CCCCCC')
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+    } else {
+      WaterFlow() {
+        ForEach(this.viewModel.workItems, (item: ImageItem, index: number) => {
+          FlowItem() {
+            ImageCard({
+              item: {
+                id: item.id,
+                imageUrl: item.imageUrl,
+                title: item.title,
+                userAvatar: item.userAvatar,
+                userId: item.userId,
+                description: item.description,
+                likeCount: this.viewModel.getWorkItemLikeCount(item.id),
+                isLiked: this.viewModel.isWorkItemLiked(item.id),
+                imageHeight: item.imageHeight
+              },
+              onLikeClick: (id: string) => this.viewModel.handleWorkLikeClick(id),
+              onCardClick: (id: string) => this.handleWorkCardClick(id)
+            })
+          }
+          .width('100%')
+          .constraintSize({
+            maxWidth: '100%',
+            minWidth: 0
           })
-        }
-        .width('100%')
-        .constraintSize({
-          maxWidth: '100%',
-          minWidth: 0
         })
+
+        // 加载更多或加载中提示
+        if (this.viewModel.workHasMore || this.viewModel.workLoading) {
+          FlowItem() {
+            Column() {
+              if (this.viewModel.workLoading) {
+                LoadingProgress()
+                  .width(24)
+                  .height(24)
+                  .margin({ bottom: 8 })
+                Text('加载中...')
+                  .fontSize(12)
+                  .fontColor('#999999')
+              } else {
+                Text('点击加载更多')
+                  .fontSize(12)
+                  .fontColor('#666666')
+                  .padding(8)
+                  .backgroundColor('#F5F5F5')
+                  .borderRadius(4)
+                  .onClick(() => {
+                    this.viewModel.loadUserPosts(false)
+                  })
+              }
+            }
+            .width('100%')
+            .height(60)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
+          }
+          .width('100%')
+          .height(60)
+        }
+      }
+      .columnsTemplate('1fr 1fr')
+      .columnsGap(8)
+      .rowsGap(10)
+      .padding({ left: 8, right: 8, top: 8, bottom: 16 })
+      .width('100%')
+      .layoutWeight(1)
+      .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
+      .onReachEnd(() => {
+        // 滚动到底部时自动加载更多
+        if (this.viewModel.workHasMore && !this.viewModel.workLoading) {
+          this.viewModel.loadUserPosts(false)
+        }
       })
     }
-    .columnsTemplate('1fr 1fr')
-    .columnsGap(8)
-    .rowsGap(10)
-    .padding({ left: 8, right: 8, top: 8, bottom: 16 })
-    .width('100%')
-    .layoutWeight(1)
-    .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
   }
 
   @Builder
   LikeContent() {
     WaterFlow() {
-      ForEach(this.likeItems, (item: ImageItem, index: number) => {
+      ForEach(this.viewModel.likeItems, (item: ImageItem, index: number) => {
         FlowItem() {
           ImageCard({
             item: {
@@ -440,11 +504,12 @@ export struct ProfilePage {
               userAvatar: item.userAvatar,
               userId: item.userId,
               description: item.description,
-              likeCount: this.getLikeItemLikeCount(item.id),
-              isLiked: this.isLikeItemLiked(item.id),
+              likeCount: this.viewModel.getLikeItemLikeCount(item.id),
+              isLiked: this.viewModel.isLikeItemLiked(item.id),
               imageHeight: item.imageHeight
             },
-            onLikeClick: (id: string) => this.handleLikeLikeClick(id),
+            onLikeClick: (id: string) => this.viewModel.handleLikeLikeClick(id),
+            onCardClick: (id: string) => this.handleLikeCardClick(id)
           })
         }
         .width('100%')
@@ -463,29 +528,4 @@ export struct ProfilePage {
     .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
   }
 
-  handleWorkLikeClick(id: string): void {
-    const currentCount = this.getWorkItemLikeCount(id)
-    const isCurrentlyLiked = this.isWorkItemLiked(id)
-
-    if (isCurrentlyLiked) {
-      this.workLikedItems.delete(id)
-      this.workLikeCounts.set(id, currentCount - 1)
-    } else {
-      this.workLikedItems.add(id)
-      this.workLikeCounts.set(id, currentCount + 1)
-    }
-  }
-
-  handleLikeLikeClick(id: string): void {
-    const currentCount = this.getLikeItemLikeCount(id)
-    const isCurrentlyLiked = this.isLikeItemLiked(id)
-
-    if (isCurrentlyLiked) {
-      this.likeLikedItems.delete(id)
-      this.likeLikeCounts.set(id, currentCount - 1)
-    } else {
-      this.likeLikedItems.add(id)
-      this.likeLikeCounts.set(id, currentCount + 1)
-    }
-  }
 }
