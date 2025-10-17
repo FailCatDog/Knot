@@ -23,7 +23,11 @@ struct CreatePostPage {
     NavDestination() {
       Column() {
         this.buildHeader()
-        this.buildContent()
+        Column() {
+          this.buildContent()
+        }
+        .layoutWeight(1)
+        .width('100%')
       }
       .width('100%')
       .height('100%')
@@ -124,16 +128,13 @@ struct CreatePostPage {
         .border({ width: 1, color: '#E0E0E0', radius: 8 })
         .backgroundColor('#FFFFFF')
 
-        // 图片选择
         Column({ space: 8 }) {
           Text('图片')
             .fontSize(14)
             .fontColor('#666666')
             .width('100%')
 
-          // 图片网格
           Flex({ wrap: FlexWrap.Wrap, alignItems: ItemAlign.Start }) {
-            // 已选图片
             ForEach(this.selectedImageUris, (uri: string, index: number) => {
               Stack({ alignContent: Alignment.TopEnd }) {
                 Image(uri)
@@ -142,7 +143,6 @@ struct CreatePostPage {
                   .objectFit(ImageFit.Cover)
                   .borderRadius(8)
 
-                // 删除按钮
                 Button() {
                   Image($r('app.media.ic_close'))
                     .width(16)
@@ -163,7 +163,6 @@ struct CreatePostPage {
               .margin({ right: 8, bottom: 8 })
             })
 
-            // 添加图片按钮
             if (this.selectedImageUris.length < 9) {
               Button() {
                 Column({ space: 4 }) {
@@ -194,14 +193,12 @@ struct CreatePostPage {
         .border({ width: 1, color: '#E0E0E0', radius: 8 })
         .backgroundColor('#FFFFFF')
 
-        // 标签输入
         Column({ space: 8 }) {
           Text('标签(可选)')
             .fontSize(14)
             .fontColor('#666666')
             .width('100%')
 
-          // 已添加的标签
           if (this.viewModel.tags.length > 0) {
             Flex({ wrap: FlexWrap.Wrap }) {
               ForEach(this.viewModel.tags, (tag: string) => {
@@ -227,7 +224,6 @@ struct CreatePostPage {
             .width('100%')
           }
 
-          // 标签输入框
           Row({ space: 8 }) {
             TextInput({ placeholder: '输入标签', text: this.tagInput })
               .fontSize(14)
@@ -262,12 +258,12 @@ struct CreatePostPage {
         .backgroundColor('#FFFFFF')
       }
       .width('100%')
-      .margin({top: -100})
       .padding(16)
     }
     .width('100%')
-    .layoutWeight(1)
+    .height('100%')
     .scrollBar(BarState.Auto)
+    .edgeEffect(EdgeEffect.Spring)
   }
 
   // 选择图片

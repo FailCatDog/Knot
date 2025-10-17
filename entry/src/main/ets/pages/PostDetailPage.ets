@@ -1,4 +1,5 @@
 import { PostDetailEntity } from '../models/entities/PostDetailEntity'
+import { ShareDrawer } from '../views/components/ShareDrawer'
 
 @Builder
 export function PostDetailPageBuilder() {
@@ -8,6 +9,7 @@ export function PostDetailPageBuilder() {
 @Component
 struct PostDetailPage {
   @State postDetail: PostDetailEntity | null = null
+  @State showShareDrawer: boolean = false
   @Consume('NavPathStack') navPathStack: NavPathStack
   pathInfos: NavPathStack = new NavPathStack()
 
@@ -133,7 +135,7 @@ struct PostDetailPage {
   }
 
   handleShare(): void {
-
+    this.showShareDrawer = true
   }
 
   handleLike(): void {
@@ -141,6 +143,46 @@ struct PostDetailPage {
       this.postDetail.isLiked = !this.postDetail.isLiked
       this.postDetail.likeCount += this.postDetail.isLiked ? 1 : -1
     }
+  }
+
+  handleCopyLink(): void {
+    this.showShareDrawer = false
+  }
+
+  handleShareWeChat(): void {
+    this.showShareDrawer = false
+  }
+
+  handleShareMoments(): void {
+    this.showShareDrawer = false
+  }
+
+  handleShareQQ(): void {
+    this.showShareDrawer = false
+  }
+
+  handleShareQZone(): void {
+    this.showShareDrawer = false
+  }
+
+  handleRepost(): void {
+    this.showShareDrawer = false
+  }
+
+  handleMessage(): void {
+    this.showShareDrawer = false
+  }
+
+  handleCollect(): void {
+    this.showShareDrawer = false
+  }
+
+  handleFeedback(): void {
+    this.showShareDrawer = false
+  }
+
+  handleReport(): void {
+    this.showShareDrawer = false
   }
 
   convertPostToDetail(post: Record<string, Object>): PostDetailEntity {
@@ -165,13 +207,34 @@ struct PostDetailPage {
 
   build() {
     NavDestination() {
-      Column() {
-        this.buildHeader()
-        this.buildContent()
+      Stack({ alignContent: Alignment.Bottom }) {
+        Column() {
+          this.buildHeader()
+          this.buildContent()
+        }
+        .width('100%')
+        .height('100%')
+        .backgroundColor('#F5F5F5')
+
+        if (this.showShareDrawer) {
+          ShareDrawer({
+            visible: this.showShareDrawer,
+            onClose: () => this.showShareDrawer = false,
+            onCopyLink: () => this.handleCopyLink(),
+            onShareWeChat: () => this.handleShareWeChat(),
+            onShareMoments: () => this.handleShareMoments(),
+            onShareQQ: () => this.handleShareQQ(),
+            onShareQZone: () => this.handleShareQZone(),
+            onRepost: () => this.handleRepost(),
+            onMessage: () => this.handleMessage(),
+            onCollect: () => this.handleCollect(),
+            onFeedback: () => this.handleFeedback(),
+            onReport: () => this.handleReport()
+          })
+        }
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#F5F5F5')
     }
     .hideTitleBar(true)
     .onReady((context: NavDestinationContext) => {
