@@ -10,7 +10,7 @@ export function EditProfilePageBuilder() {
 @Component
 export struct EditProfilePage {
   @Consume('NavPathStack') pathStack: NavPathStack
-  viewModel: EditProfileViewModel = new EditProfileViewModel()
+  @State viewModel: EditProfileViewModel = new EditProfileViewModel()
 
   async aboutToAppear() {
     const result = await this.viewModel.loadUserInfo()

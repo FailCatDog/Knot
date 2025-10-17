@@ -12,20 +12,20 @@ export interface SaveUserInfoResult {
   userInfo?: UserInfo
 }
 
-@ObservedV2
+@Observed
 export class EditProfileViewModel {
   // 表单数据
-  @Trace realName: string = ''
-  @Trace phone: string = ''
-  @Trace email: string = ''
-  @Trace bio: string = ''
-  @Trace gender: string = ''
-  @Trace location: string = ''
-  @Trace avatarUrl: string = ''
+  realName: string = ''
+  phone: string = ''
+  email: string = ''
+  bio: string = ''
+  gender: string = ''
+  location: string = ''
+  avatarUrl: string = ''
 
   // 状态
-  @Trace isLoading: boolean = false
-  @Trace errorMessage: string = ''
+  isLoading: boolean = false
+  errorMessage: string = ''
 
   // 加载用户信息
   async loadUserInfo(): Promise<OperationResult> {

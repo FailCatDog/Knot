@@ -10,7 +10,7 @@ interface RegisterApiResponse {
 
 @Component
 export struct RegisterPage {
-  viewModel: AuthViewModel = new AuthViewModel()
+  @State viewModel: AuthViewModel = new AuthViewModel()
   @State username: string = ''
   @State realName: string = ''
   @State phone: string = ''

@@ -51,7 +51,7 @@ export class ApiConstants {
     REGISTER: '/auth/register',
     LOGIN: '/auth/login',
     GET_USER_INFO: '/users/profile',
-    UPDATE_USER_INFO: '/users/profile',
+    UPDATE_USER_INFO: '/users/info',
     CHANGE_PASSWORD: '/auth/password'
   };
 

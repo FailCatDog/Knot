@@ -9,7 +9,7 @@ export function ChangePasswordPageBuilder() {
 @Component
 export struct ChangePasswordPage {
   @Consume('NavPathStack') pathStack: NavPathStack
-  viewModel: ChangePasswordViewModel = new ChangePasswordViewModel()
+  @State viewModel: ChangePasswordViewModel = new ChangePasswordViewModel()
 
   async aboutToAppear() {
     const result = await this.viewModel.initialize()

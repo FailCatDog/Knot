@@ -5,7 +5,7 @@ import { AuthViewModel } from '../../viewmodels/AuthViewModel'
 
 @Component
 export struct LoginPage {
-  viewModel: AuthViewModel = new AuthViewModel()
+  @State viewModel: AuthViewModel = new AuthViewModel()
   @State username: string = 'zhangsan'
   @State password: string = 'password123'
   @State testResult: string = ''

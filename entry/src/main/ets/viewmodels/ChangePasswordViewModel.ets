@@ -6,17 +6,17 @@ export interface OperationResult {
   message: string
 }
 
-@ObservedV2
+@Observed
 export class ChangePasswordViewModel {
   // 表单数据
-  @Trace oldPassword: string = ''
-  @Trace newPassword: string = ''
-  @Trace confirmPassword: string = ''
+  oldPassword: string = ''
+  newPassword: string = ''
+  confirmPassword: string = ''
   
   // 状态
-  @Trace isSubmitting: boolean = false
-  @Trace errorMessage: string = ''
-  @Trace userId: number = 0
+  isSubmitting: boolean = false
+  errorMessage: string = ''
+  userId: number = 0
 
   // 初始化，获取用户ID
   async initialize(): Promise<OperationResult> {

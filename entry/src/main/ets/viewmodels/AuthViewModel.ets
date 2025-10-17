@@ -13,15 +13,15 @@ export interface RegisterResult {
   message: string
 }
 
-@ObservedV2
+@Observed
 export class AuthViewModel {
   // 登录状态
-  @Trace isLoginLoading: boolean = false
-  @Trace loginErrorMessage: string = ''
+  isLoginLoading: boolean = false
+  loginErrorMessage: string = ''
 
   // 注册状态
-  @Trace isRegisterLoading: boolean = false
-  @Trace registerErrorMessage: string = ''
+  isRegisterLoading: boolean = false
+  registerErrorMessage: string = ''
 
   // 登录
   async login(username: string, password: string): Promise<LoginResult> {

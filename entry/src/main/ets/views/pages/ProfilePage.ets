@@ -22,7 +22,7 @@ interface UserLogoutStatusChangedData {
 @Component
 export struct ProfilePage {
   @Consume('NavPathStack') pathStack: NavPathStack
-  viewModel: ProfileViewModel = new ProfileViewModel()
+  @State viewModel: ProfileViewModel = new ProfileViewModel()
   @State currentAuthPage: AuthPageType = AuthPageType.LOGIN
   @State showAuthView: boolean = false
   @State currentIndex: number = 0

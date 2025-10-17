@@ -2,11 +2,11 @@ import { getCurrentUserInfo, UserInfo, getUserPosts, Post, UserPostsResponse } f
 import { TokenManager } from '../services/TokenManager'
 import { ImageItem } from '../views/components/ImageCard'
 
-@ObservedV2
+@Observed
 export class ProfileViewModel {
   // 用户信息相关
-  @Trace isUserLoggedIn: boolean = false
-  @Trace userInfo: UserInfo = {
+  isUserLoggedIn: boolean = false
+  userInfo: UserInfo = {
     id: 0,
     user_id: '',
     username: '',
@@ -23,22 +23,22 @@ export class ProfileViewModel {
     update_time: 0,
     device_count: 0
   }
-  @Trace isLoading: boolean = true
+  isLoading: boolean = true
 
   // 作品相关状态
-  @Trace workLikedItems: Set<string> = new Set()
-  @Trace workLikeCounts: Map<string, number> = new Map()
-  @Trace workItems: ImageItem[] = []
-  @Trace workPosts: Post[] = []
-  @Trace workPage: number = 1
-  @Trace workTotalCount: number = 0
-  @Trace workLoading: boolean = false
-  @Trace workHasMore: boolean = true
+  workLikedItems: Set<string> = new Set()
+  workLikeCounts: Map<string, number> = new Map()
+  workItems: ImageItem[] = []
+  workPosts: Post[] = []
+  workPage: number = 1
+  workTotalCount: number = 0
+  workLoading: boolean = false
+  workHasMore: boolean = true
 
   // 收藏相关状态
-  @Trace likeLikedItems: Set<string> = new Set()
-  @Trace likeLikeCounts: Map<string, number> = new Map()
-  @Trace likeItems: ImageItem[] = []
+  likeLikedItems: Set<string> = new Set()
+  likeLikeCounts: Map<string, number> = new Map()
+  likeItems: ImageItem[] = []
 
   // 检查用户登录状态
   async checkUserLoginStatus(): Promise<void> {
