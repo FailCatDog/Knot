@@ -24,8 +24,7 @@ class HttpRequest {
   private authToken: string = '';
   private noAuthPaths: string[] = [
     '/auth/register',
-    '/auth/login',
-    '/posts'
+    '/auth/login'
   ];
 
   constructor() {
@@ -124,6 +123,7 @@ class HttpRequest {
 
     console.log('[HttpRequest] 发起请求:', method, fullUrl);
     console.log('[HttpRequest] 请求头:', JSON.stringify(options.header));
+    console.log('[HttpRequest] Authorization:', options.header?.['Authorization'] || '未携带token');
     console.log('[HttpRequest] 请求数据类型:', isCreatePost ? 'multipart/form-data' : 'JSON');
     if (isCreatePost && options.multiFormDataList) {
       console.log('[HttpRequest] multipart 字段数量:', options.multiFormDataList.length);

@@ -35,6 +35,7 @@ export class TokenManager {
     try {
       await this.prefs.put(TokenManager.TOKEN_KEY, token)
       await this.prefs.flush()
+      console.log('[TokenManager] Token保存成功')
     } catch (error) {
       const businessError = error as BusinessError
       console.error('保存token失败:', businessError.message)
@@ -48,7 +49,9 @@ export class TokenManager {
     }
     try {
       const token = await this.prefs.get(TokenManager.TOKEN_KEY, '')
-      return token === '' ? null : token as string
+      const result = token === '' ? null : token as string
+      console.log('[TokenManager] 获取token:', result ? '成功' : '未找到')
+      return result
     } catch (error) {
       const businessError = error as BusinessError
       console.error('获取token失败:', businessError.message)

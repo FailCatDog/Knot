@@ -32,7 +32,7 @@ interface UserEndpoints {
 }
 
 export class ApiConstants {
-  static readonly BASE_URL = 'http://8.138.115.164:8080/api/v1';
+  static readonly BASE_URL = 'http://43.142.157.145:8080/api/v1';
   static readonly TIMEOUT = 10000;
 
   static readonly ENDPOINTS: PostEndpoints = {
