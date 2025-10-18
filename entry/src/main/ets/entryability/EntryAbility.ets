@@ -23,7 +23,7 @@ export default class EntryAbility extends UIAbility {
     await tokenManager.init(this.context);
     hilog.info(DOMAIN, 'testTag', 'TokenManager initialized successfully');
 
-    windowStage.loadContent('pages/MainPage', (err) => {
+    windowStage.loadContent('pages/SplashPage', (err) => {
       if (err.code) {
         hilog.error(DOMAIN, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err));
         return;

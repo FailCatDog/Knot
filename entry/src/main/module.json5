@@ -43,7 +43,7 @@
         "description": "$string:EntryAbility_desc",
         "icon": "$media:ic_app",
         "label": "$string:EntryAbility_label",
-        "startWindowIcon": "$media:ic_start",
+        "startWindowIcon": "$media:ic_app",
         "startWindowBackground": "$color:start_window_background",
         "exported": true,
         "skills": [

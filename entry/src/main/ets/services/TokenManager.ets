@@ -7,6 +7,7 @@ export class TokenManager {
   private static instance: TokenManager
   private prefs: preferences.Preferences | null = null
   private static readonly TOKEN_KEY = 'auth_token'
+  private static readonly USER_ID_KEY = 'current_user_id'
   private static readonly PREFS_NAME = 'user_prefs'
   private static onTokenExpiredCallback: (() => void) | null = null
 
@@ -67,11 +68,40 @@ export class TokenManager {
     }
     try {
       await this.prefs.delete(TokenManager.TOKEN_KEY)
+      await this.prefs.delete(TokenManager.USER_ID_KEY)
       await this.prefs.flush()
     } catch (error) {
       const businessError = error as BusinessError
       console.error('清除token失败:', businessError.message)
       throw new Error('清除token失败')
+    }
+  }
+
+  async saveUserId(userId: string): Promise<void> {
+    if (!this.prefs) {
+      throw new Error('Preferences未初始化')
+    }
+    try {
+      await this.prefs.put(TokenManager.USER_ID_KEY, userId)
+      await this.prefs.flush()
+    } catch (error) {
+      const businessError = error as BusinessError
+      console.error('保存userId失败:', businessError.message)
+      throw new Error('保存userId失败')
+    }
+  }
+
+  async getUserId(): Promise<string | null> {
+    if (!this.prefs) {
+      throw new Error('Preferences未初始化')
+    }
+    try {
+      const userId = await this.prefs.get(TokenManager.USER_ID_KEY, '')
+      return userId === '' ? null : userId as string
+    } catch (error) {
+      const businessError = error as BusinessError
+      console.error('获取userId失败:', businessError.message)
+      return null
     }
   }
 
@@ -145,6 +175,10 @@ export class TokenManager {
     }
 
     return false
+  }
+
+  async clearUserData(): Promise<void> {
+    await this.clearToken()
   }
 
   static setTokenExpiredCallback(callback: () => void): void {

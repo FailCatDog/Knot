@@ -57,9 +57,7 @@ export struct ImageCard {
             .margin({ bottom: 8 })
         }
 
-        // 用户信息和点赞
         Row() {
-          // 用户信息
           Row() {
             Image(this.item.userAvatar)
               .width(24)
@@ -71,13 +69,14 @@ export struct ImageCard {
             Text(this.item.userId)
               .fontSize(14)
               .fontColor($r('sys.color.ohos_id_color_text_secondary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .layoutWeight(1)
           }
           .alignItems(VerticalAlign.Center)
           .layoutWeight(1)
 
-          // 点赞区域
           Row() {
-            // 点赞图标
             Column() {
               Image(this.item.isLiked ? $r('app.media.ic_heart_filled') : $r('app.media.ic_heart_outline'))
                 .width(20)
@@ -93,7 +92,6 @@ export struct ImageCard {
             }
             .margin({ right: 4 })
 
-            // 点赞数
             Text(this.item.likeCount.toString())
               .fontSize(14)
               .fontColor($r('sys.color.ohos_id_color_text_secondary'))
