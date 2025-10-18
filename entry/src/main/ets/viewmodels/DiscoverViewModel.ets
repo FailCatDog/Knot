@@ -1,5 +1,5 @@
 import { getPosts, type PostEntity } from '../services/api/PostApi';
-import promptAction from '@ohos.promptAction';
+import { ToastUtil } from '../common/utils/ToastUtil';
 
 @Observed
 export class DiscoverViewModel {
@@ -35,13 +35,21 @@ export class DiscoverViewModel {
       console.log('[DiscoverViewModel] 响应结果:', JSON.stringify(response));
 
       if (response.success && response.data) {
-        const newPosts = response.data.posts;
+        const newPosts: PostEntity[] = response.data.posts;
         this.total = response.data.total;
 
         if (isRefresh) {
           this.posts = newPosts;
         } else {
-          this.posts = [...this.posts, ...newPosts];
+          // 使用数组拷贝而不是展开运算符
+          const updatedPosts: PostEntity[] = [];
+          for (let i = 0; i < this.posts.length; i++) {
+            updatedPosts.push(this.posts[i]);
+          }
+          for (let i = 0; i < newPosts.length; i++) {
+            updatedPosts.push(newPosts[i]);
+          }
+          this.posts = updatedPosts;
         }
 
         this.hasMore = this.posts.length < this.total;
@@ -61,11 +69,7 @@ export class DiscoverViewModel {
   }
 
   private showError(message: string): void {
-    promptAction.showToast({
-      message: message,
-      duration: 2000,
-      bottom: 100
-    });
+    ToastUtil.getInstance().showWithBottom(message, 2000, 100);
   }
 }
 

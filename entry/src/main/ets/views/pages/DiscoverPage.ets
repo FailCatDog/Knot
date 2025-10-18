@@ -1,16 +1,13 @@
 import { ImageCard, ImageItem } from '../components/ImageCard'
 import { DiscoverViewModel } from '../../viewmodels/DiscoverViewModel'
 import { PostEntity } from '../../services/api/PostApi'
+import { PostStateManager } from '../../common/utils/PostStateManager'
+import { LoadingComponent } from '../components/LoadingComponent'
 
-interface PostDetailParam {
+interface PostDetailNavParam {
   post_id: string
-  user_id: number
-  title: string
-  description: string
-  like_count: number
-  create_time: string
-  image_urls: string[]
 }
+
 
 @Component
 export struct DiscoverPage {
@@ -18,6 +15,7 @@ export struct DiscoverPage {
   @State likedItems: Set<string> = new Set()
   @State likeCounts: Map<string, number> = new Map()
   @State imageList: ImageItem[] = []
+  @State isInitialLoading: boolean = true
   @Consume('NavPathStack') navPathStack: NavPathStack
   private scroller: Scroller = new Scroller()
 
@@ -25,9 +23,33 @@ export struct DiscoverPage {
     await this.loadInitialData()
   }
 
+  onPageShow(): void {
+    this.syncPostStates()
+  }
+
+  syncPostStates(): void {
+    const postStateManager = PostStateManager.getInstance()
+    this.imageList.forEach(item => {
+      if (postStateManager.hasPostState(item.id)) {
+        const state = postStateManager.getPostState(item.id)
+        if (state) {
+          if (state.isLiked) {
+            this.likedItems.add(state.postId)
+          } else {
+            this.likedItems.delete(state.postId)
+          }
+          this.likeCounts.set(state.postId, state.likeCount)
+          postStateManager.clearPostState(state.postId)
+        }
+      }
+    })
+  }
+
   async loadInitialData(): Promise<void> {
+    this.isInitialLoading = true
     await this.viewModel.loadPosts(true)
     this.updateImageList()
+    this.isInitialLoading = false
   }
 
   async loadMoreData(): Promise<void> {
@@ -70,7 +92,11 @@ export struct DiscoverPage {
   build() {
     Column() {
       this.buildHeader()
-      this.buildContent()
+      if (this.isInitialLoading) {
+        LoadingComponent()
+      } else {
+        this.buildContent()
+      }
     }
     .width('100%')
     .height('100%')
@@ -188,19 +214,7 @@ export struct DiscoverPage {
   }
 
   handleCardClick(id: string): void {
-    const post = this.viewModel.posts.find(p => p.post_id === id)
-    if (post) {
-      const imageUrls = post.images ? post.images.map(img => img.file_url) : []
-      const postData: PostDetailParam = {
-        post_id: post.post_id,
-        user_id: post.user_id,
-        title: post.title,
-        description: post.description || '',
-        like_count: post.like_count,
-        create_time: this.formatTimestamp(post.create_time),
-        image_urls: imageUrls
-      }
-      this.navPathStack.pushPathByName('PostDetailPage', postData, false)
-    }
+    const param: PostDetailNavParam = { post_id: id }
+    this.navPathStack.pushPathByName('PostDetailPage', param, false)
   }
 }

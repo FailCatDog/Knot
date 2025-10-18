@@ -1,6 +1,6 @@
 import { PostDetailEntity } from '../models/entities/PostDetailEntity'
 import { getPostDetail, type PostEntity } from '../services/api/PostApi'
-import promptAction from '@ohos.promptAction'
+import { ToastUtil } from '../common/utils/ToastUtil'
 
 export class PostDetailViewModel {
   postDetail: PostDetailEntity | null = null
@@ -30,10 +30,10 @@ export class PostDetailViewModel {
 
   private convertPostToDetail(post: PostEntity): PostDetailEntity {
     const imageUrls = post.images ? post.images.map(img => img.file_url) : []
-    const publishDate = post.create_time ? post.create_time.split(' ')[0] : ''
+    const publishDate = this.formatTimestamp(post.create_time)
     
     return {
-      id: post.post_id,
+      postId: post.post_id,
       imageUrls: imageUrls,
       title: post.title,
       description: post.description || '',
@@ -42,8 +42,18 @@ export class PostDetailViewModel {
       userName: `用户${post.user_id}`,
       publishDate: publishDate,
       likeCount: post.like_count,
-      isLiked: false
+      isLiked: false,
+      favoriteCount: post.favorite_count,
+      isFavorited: false
     }
+  }
+
+  private formatTimestamp(timestamp: number): string {
+    const date = new Date(timestamp * 1000)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
   toggleLike(): void {
@@ -58,10 +68,6 @@ export class PostDetailViewModel {
   }
 
   private showError(message: string): void {
-    promptAction.showToast({
-      message: message,
-      duration: 2000,
-      bottom: 100
-    })
+    ToastUtil.getInstance().showWithBottom(message, 2000, 100);
   }
 }

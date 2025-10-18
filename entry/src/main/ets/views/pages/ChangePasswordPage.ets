@@ -1,5 +1,5 @@
-import prompt from '@ohos.prompt'
 import { ChangePasswordViewModel } from '../../viewmodels/ChangePasswordViewModel'
+import { ToastUtil } from '../../common/utils/ToastUtil'
 
 @Builder
 export function ChangePasswordPageBuilder() {
@@ -14,7 +14,7 @@ export struct ChangePasswordPage {
   async aboutToAppear() {
     const result = await this.viewModel.initialize()
     if (!result.success) {
-      prompt.showToast({ message: result.message })
+      ToastUtil.getInstance().show(result.message);
       this.pathStack.pop()
     }
   }
@@ -146,10 +146,10 @@ export struct ChangePasswordPage {
     const result = await this.viewModel.changePassword()
     
     if (result.success) {
-      prompt.showToast({ message: result.message })
+      ToastUtil.getInstance().show(result.message);
       this.pathStack.pop()
     } else {
-      prompt.showToast({ message: result.message })
+      ToastUtil.getInstance().show(result.message);
     }
   }
 }

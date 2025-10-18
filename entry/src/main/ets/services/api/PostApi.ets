@@ -16,29 +16,21 @@ export interface CreatePostParams {
   tags?: string[];
 }
 /**
- * 上传图片返回参数
+ * 图片实体
  */
 export interface ImageEntity {
-  id: number;
   image_id: string;
-  user_id: number;
-  title: string;
-  description: string;
+  post_id: number;
+  display_order: number;
   file_url: string;
   thumbnail_url: string;
   file_size: number;
   width: number;
   height: number;
   mime_type: string;
-  like_count: number;
-  favorite_count: number;
-  view_count: number;
-  status: "APPROVED" | "PENDING" | "REJECTED";
-  create_time: number;  // 已经是 number，保持不变
-  update_time: number;  // 已经是 number，保持不变
+  create_time: number;
 }
 export interface PostEntity {
-  id: number;
   post_id: string;
   user_id: number;
   title: string;
@@ -47,63 +39,88 @@ export interface PostEntity {
   like_count: number;
   favorite_count: number;
   view_count: number;
-  share_count: number;
-  comment_count: number;
   status: "APPROVED" | "PENDING" | "REJECTED";
-  create_time: number;  // 修正：后端返回的是时间戳数字
-  update_time: number;  // 修正：后端返回的是时间戳数字
+  create_time: number;
+  update_time: number;
   images: ImageEntity[];
-  tags: string[];
 }
 export interface SubmitImageData {
   post: PostEntity;
 }
-export interface SubmitImageResponse {
-  success: boolean;
-  message: string;
-  data: SubmitImageData;
-  timestamp: number;
-}
-export interface GetPostsResponse {
-  success: boolean;
-  message: string;
+
+export interface GetPostsData {
   posts: PostEntity[];
   total: number;
   page: number;
-  pageSize: number;
-  timestamp: number;
+  page_size: number;
 }
 
 export const submitImage = async (
   param: CreatePostParams
-): Promise<ApiResponse<SubmitImageResponse>> => {
-  console.log('[PostApi] submitImage 被调用，参数:', JSON.stringify({
-    title: param.title,
-    description: param.description,
-    imageFilesCount: param.imageFiles.length,
-    imageFilesSizes: param.imageFiles.map(buf => buf.byteLength),
-    tags: param.tags
-  }));
-  return httpRequest.post<SubmitImageResponse, CreatePostParams>(
+): Promise<ApiResponse<SubmitImageData>> => {
+  return httpRequest.post<SubmitImageData, CreatePostParams>(
     ApiConstants.ENDPOINTS.CREATE_POST,
     param
   )
 }
 
-export interface GetPostDetailResponse {
-  success: boolean;
-  message: string;
+export interface GetPostDetailData {
   post: PostEntity;
-  timestamp: number;
 }
 
-export const getPosts = async (page: number, pageSize: number): Promise<ApiResponse<GetPostsResponse>> => {
+export const getPosts = async (page: number, pageSize: number): Promise<ApiResponse<GetPostsData>> => {
   console.log('[PostApi] getPosts 被调用，参数:', { page, pageSize });
-  return httpRequest.get<GetPostsResponse>(`${ApiConstants.ENDPOINTS.GET_FEED}?page=${page}&pageSize=${pageSize}`);
+  return httpRequest.get<GetPostsData>(`${ApiConstants.ENDPOINTS.GET_FEED}?page=${page}&pageSize=${pageSize}`);
 }
 
-export const getPostDetail = async (postId: string): Promise<ApiResponse<GetPostDetailResponse>> => {
+export const getPostDetail = async (postId: string): Promise<ApiResponse<GetPostDetailData>> => {
   console.log('[PostApi] getPostDetail 被调用，参数:', { postId });
   const url = ApiConstants.ENDPOINTS.GET_POST_DETAIL.replace('{post_id}', postId);
-  return httpRequest.get<GetPostDetailResponse>(url);
+  return httpRequest.get<GetPostDetailData>(url);
+}
+
+export interface FavoritePostData {
+  post_id: string;
+  favorite_count: number;
+  has_favorited: boolean;
+}
+
+export const favoritePost = async (postId: string): Promise<ApiResponse<FavoritePostData>> => {
+  console.log('[PostApi] favoritePost 被调用，参数:', { postId });
+  const url = ApiConstants.ENDPOINTS.FAVORITE_POST.replace('{post_id}', postId);
+  return httpRequest.post<FavoritePostData>(url, {});
+}
+
+export interface FavoriteStatusData {
+  has_favorited: boolean;
+}
+
+export const getFavoriteStatus = async (postId: string): Promise<ApiResponse<FavoriteStatusData>> => {
+  const url = ApiConstants.ENDPOINTS.GET_FAVORITE_STATUS.replace('{post_id}', postId);
+  return httpRequest.get<FavoriteStatusData>(url);
+}
+
+export interface LikePostData {
+  post_id: string;
+  like_count: number;
+  has_liked: boolean;
+}
+
+export const likePost = async (postId: string): Promise<ApiResponse<LikePostData>> => {
+  const url = ApiConstants.ENDPOINTS.LIKE_POST.replace('{post_id}', postId);
+  return httpRequest.post<LikePostData>(url, {});
+}
+
+export const unlikePost = async (postId: string): Promise<ApiResponse<LikePostData>> => {
+  const url = ApiConstants.ENDPOINTS.UNLIKE_POST.replace('{post_id}', postId);
+  return httpRequest.delete<LikePostData>(url);
+}
+
+export interface LikeStatusData {
+  has_liked: boolean;
+}
+
+export const getLikeStatus = async (postId: string): Promise<ApiResponse<LikeStatusData>> => {
+  const url = ApiConstants.ENDPOINTS.GET_LIKE_STATUS.replace('{post_id}', postId);
+  return httpRequest.get<LikeStatusData>(url);
 }

@@ -2,6 +2,7 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.Ab
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { TokenManager } from '../services/TokenManager';
+import { ToastUtil } from '../common/utils/ToastUtil';
 
 const DOMAIN = 0x0000;
 
@@ -28,6 +29,16 @@ export default class EntryAbility extends UIAbility {
         return;
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
+      
+      try {
+        const mainWindow = windowStage.getMainWindowSync();
+        const uiContext = mainWindow.getUIContext();
+        const toastUtil = ToastUtil.getInstance();
+        toastUtil.init(uiContext);
+        hilog.info(DOMAIN, 'testTag', 'ToastUtil initialized successfully');
+      } catch (error) {
+        hilog.error(DOMAIN, 'testTag', 'Failed to initialize ToastUtil: %{public}s', JSON.stringify(error));
+      }
     });
   }
 
