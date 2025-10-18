@@ -34,6 +34,8 @@ interface UserEndpoints {
   GET_USER_INFO: string;
   UPDATE_USER_INFO: string;
   CHANGE_PASSWORD: string;
+  FOLLOW_USER: string;
+  GET_FOLLOW_STATUS: string;
 }
 
 export class ApiConstants {
@@ -62,7 +64,9 @@ export class ApiConstants {
     LOGIN: '/auth/login',
     GET_USER_INFO: '/users/profile',
     UPDATE_USER_INFO: '/users/info',
-    CHANGE_PASSWORD: '/auth/password'
+    CHANGE_PASSWORD: '/auth/password',
+    FOLLOW_USER: '/users/{user_id}/follow',
+    GET_FOLLOW_STATUS: '/users/{user_id}/follow/status'
   };
 
   static readonly HTTP_STATUS: HttpStatus = {

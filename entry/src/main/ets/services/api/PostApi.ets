@@ -91,6 +91,12 @@ export const favoritePost = async (postId: string): Promise<ApiResponse<Favorite
   return httpRequest.post<FavoritePostData>(url, {});
 }
 
+export const unfavoritePost = async (postId: string): Promise<ApiResponse<FavoritePostData>> => {
+  console.log('[PostApi] unfavoritePost 被调用，参数:', { postId });
+  const url = ApiConstants.ENDPOINTS.FAVORITE_POST.replace('{post_id}', postId);
+  return httpRequest.delete<FavoritePostData>(url);
+}
+
 export interface FavoriteStatusData {
   has_favorited: boolean;
 }

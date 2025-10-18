@@ -2,6 +2,7 @@
 export struct ShareDrawer {
   @Prop visible: boolean
   @Prop isFavorited: boolean = false
+  @Prop isOwnPost: boolean = false
   onClose: () => void = () => {}
   onCopyLink: () => void = () => {}
   onShareWeChat: () => void = () => {}
@@ -13,6 +14,7 @@ export struct ShareDrawer {
   onCollect: () => void = () => {}
   onFeedback: () => void = () => {}
   onReport: () => void = () => {}
+  onEdit: () => void = () => {}
 
   @Builder
   buildShareItem(text: string, icon: Resource, onClick: () => void) {
@@ -63,15 +65,22 @@ export struct ShareDrawer {
             .justifyContent(FlexAlign.SpaceEvenly)
             .margin({ bottom: 24 })
 
-            Row() {
-              this.buildShareItem('转发动态', $r('app.media.ic_repost'), this.onRepost)
-              this.buildShareItem('私信好友', $r('app.media.ic_send'), this.onMessage)
-              this.buildShareItem(this.isFavorited ? '取消收藏' : '收藏', this.isFavorited ? $r('app.media.ic_favorite_filled') : $r('app.media.ic_favorite_outline'), this.onCollect)
-              this.buildShareItem('内容反馈', $r('app.media.ic_heartbreak'), this.onFeedback)
-              this.buildShareItem('举报', $r('app.media.ic_report'), this.onReport)
+            Scroll() {
+              Row({ space: 12 }) {
+                if (this.isOwnPost) {
+                  this.buildShareItem('编辑', $r('app.media.ic_profilePage_setting'), this.onEdit)
+                }
+                this.buildShareItem('转发动态', $r('app.media.ic_repost'), this.onRepost)
+                this.buildShareItem('私信好友', $r('app.media.ic_send'), this.onMessage)
+                this.buildShareItem(this.isFavorited ? '取消收藏' : '收藏', this.isFavorited ? $r('app.media.ic_favorite_filled') : $r('app.media.ic_favorite_outline'), this.onCollect)
+                this.buildShareItem('内容反馈', $r('app.media.ic_heartbreak'), this.onFeedback)
+                this.buildShareItem('举报', $r('app.media.ic_report'), this.onReport)
+              }
+              .padding({ left: 16, right: 16 })
             }
             .width('100%')
-            .justifyContent(FlexAlign.SpaceEvenly)
+            .scrollable(ScrollDirection.Horizontal)
+            .scrollBar(BarState.Off)
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 24, bottom: 24 })

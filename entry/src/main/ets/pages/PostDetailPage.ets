@@ -1,9 +1,11 @@
 import { PostDetailEntity } from '../models/entities/PostDetailEntity'
 import { ShareDrawer } from '../views/components/ShareDrawer'
-import { favoritePost, getPostDetail, getFavoriteStatus, likePost, unlikePost, getLikeStatus } from '../services/api/PostApi'
+import { favoritePost, unfavoritePost, getPostDetail, getFavoriteStatus, likePost, unlikePost, getLikeStatus } from '../services/api/PostApi'
 import { ToastUtil } from '../common/utils/ToastUtil'
 import { PostStateManager } from '../common/utils/PostStateManager'
 import { LoadingComponent } from '../views/components/LoadingComponent'
+import { followUser, getCurrentUserInfo, getFollowStatus } from '../services/api/UserApi'
+import { TokenManager } from '../services/TokenManager'
 
 @Builder
 export function PostDetailPageBuilder() {
@@ -17,6 +19,9 @@ struct PostDetailPage {
   @State showImagePreview: boolean = false
   @State currentImageIndex: number = 0
   @State isLoading: boolean = true
+  @State isFollowing: boolean = false
+  @State isOwnPost: boolean = false
+  @State currentUserId: string = ''
   @Consume('NavPathStack') navPathStack: NavPathStack
   pathInfos: NavPathStack = new NavPathStack()
   private postId: string = ''
@@ -39,28 +44,52 @@ struct PostDetailPage {
           this.navPathStack.pop()
         })
 
-      Row() {
-        Image(this.postDetail?.userAvatar)
-          .width(32)
-          .height(32)
-          .borderRadius(16)
-          .margin({ right: 8 })
+      if (!this.isLoading && this.postDetail) {
+        Row({ space: 8 }) {
+          Image(this.postDetail.userAvatar)
+            .width(32)
+            .height(32)
+            .borderRadius(16)
 
-        Text(this.postDetail?.userName)
-          .fontSize(16)
-          .fontColor('#333333')
-          .fontWeight(FontWeight.Medium)
+          Text(this.postDetail.userName)
+            .fontSize(16)
+            .fontColor('#333333')
+            .fontWeight(FontWeight.Medium)
+
+          if (!this.isOwnPost) {
+            Row({ space: 4 }) {
+              Image($r('app.media.ic_add'))
+                .width(14)
+                .height(14)
+                .fillColor(this.isFollowing ? '#999999' : '#ffdd0223')
+
+              Text(this.isFollowing ? '已关注' : '关注')
+                .fontSize(12)
+                .fontColor(this.isFollowing ? '#999999' : '#ffdd0223')
+            }
+            .padding({ left: 8, right: 10, top: 4, bottom: 4 })
+            .borderRadius(12)
+            .border({ width: 1, color: this.isFollowing ? '#E0E0E0' : '#ffdd0223' })
+            .backgroundColor(this.isFollowing ? '#F5F5F5' : '#FFF5F5')
+            .onClick(() => {
+              this.handleFollow()
+            })
+          }
+        }
+        .layoutWeight(1)
+        .margin({ left: 16 })
+
+        Image($r('app.media.ic_more'))
+          .width(24)
+          .height(24)
+          .fillColor('#333333')
+          .onClick(() => {
+            this.handleShare()
+          })
+      } else {
+        Row()
+          .layoutWeight(1)
       }
-      .layoutWeight(1)
-      .margin({ left: 16 })
-
-      Image($r('app.media.ic_more'))
-        .width(24)
-        .height(24)
-        .fillColor('#333333')
-        .onClick(() => {
-          this.handleShare()
-        })
     }
     .width('100%')
     .height(56)
@@ -186,6 +215,16 @@ struct PostDetailPage {
     this.showShareDrawer = true
   }
 
+  async handleFollow(): Promise<void> {
+    if (!this.postDetail) return
+    
+    const response = await followUser(this.postDetail.userId)
+    if (response.success) {
+      this.isFollowing = !this.isFollowing
+      ToastUtil.getInstance().show(this.isFollowing ? '关注成功' : '取消关注')
+    }
+  }
+
   async handleLike(): Promise<void> {
     if (!this.postDetail) return
 
@@ -230,8 +269,10 @@ struct PostDetailPage {
   async handleCollect(): Promise<void> {
     this.showShareDrawer = false
     if (!this.postDetail) return
-    
-    const response = await favoritePost(this.postDetail.postId)
+
+    const currentFavorited = this.postDetail.isFavorited
+    const response = currentFavorited ? await unfavoritePost(this.postDetail.postId) : await favoritePost(this.postDetail.postId)
+
     if (response.success && response.data) {
       this.postDetail.isFavorited = response.data.has_favorited
       this.postDetail.favoriteCount = response.data.favorite_count
@@ -244,6 +285,10 @@ struct PostDetailPage {
   }
 
   handleReport(): void {
+    this.showShareDrawer = false
+  }
+
+  handleEdit(): void {
     this.showShareDrawer = false
   }
 
@@ -298,34 +343,73 @@ struct PostDetailPage {
 
     this.isLoading = true
 
-    const results = await Promise.all([
-      getPostDetail(this.postId),
-      getFavoriteStatus(this.postId),
-      getLikeStatus(this.postId)
-    ])
-    
-    const detailResponse = results[0]
-    const favoriteResponse = results[1]
-    const likeResponse = results[2]
+    const token = await TokenManager.getInstance().getToken()
+    if (token) {
+      const userInfoResponse = await getCurrentUserInfo()
+      if (userInfoResponse.success && userInfoResponse.data) {
+        this.currentUserId = userInfoResponse.data.user_id
+      }
+    }
+
+    const detailResponse = await getPostDetail(this.postId)
 
     if (detailResponse.success && detailResponse.data) {
       const post = detailResponse.data.post
-      const imageUrls = post.images ? post.images.map(img => img.file_url) : []
-      const publishDate = this.formatTimestamp(post.create_time)
+      this.isOwnPost = this.currentUserId === post.user_id.toString()
 
-      this.postDetail = {
-        postId: post.post_id,
-        imageUrls: imageUrls,
-        title: post.title,
-        description: post.description || '',
-        userAvatar: 'https://picsum.photos/60/60',
-        userId: `用户${post.user_id}`,
-        userName: `用户${post.user_id}`,
-        publishDate: publishDate,
-        likeCount: post.like_count,
-        isLiked: likeResponse.success && likeResponse.data ? likeResponse.data.has_liked : false,
-        favoriteCount: post.favorite_count,
-        isFavorited: favoriteResponse.success && favoriteResponse.data ? favoriteResponse.data.has_favorited : false
+      const favoritePromise = getFavoriteStatus(this.postId)
+      const likePromise = getLikeStatus(this.postId)
+      
+      if (!this.isOwnPost) {
+        const followPromise = getFollowStatus(post.user_id.toString())
+        const results = await Promise.all([favoritePromise, likePromise, followPromise])
+        const favoriteResponse = results[0]
+        const likeResponse = results[1]
+        const followResponse = results[2]
+        
+        const imageUrls = post.images ? post.images.map(img => img.file_url) : []
+        const publishDate = this.formatTimestamp(post.create_time)
+
+        this.postDetail = {
+          postId: post.post_id,
+          imageUrls: imageUrls,
+          title: post.title,
+          description: post.description || '',
+          userAvatar: 'https://picsum.photos/60/60',
+          userId: post.user_id.toString(),
+          userName: `用户${post.user_id}`,
+          publishDate: publishDate,
+          likeCount: post.like_count,
+          isLiked: likeResponse.success && likeResponse.data ? likeResponse.data.has_liked : false,
+          favoriteCount: post.favorite_count,
+          isFavorited: favoriteResponse.success && favoriteResponse.data ? favoriteResponse.data.has_favorited : false
+        }
+
+        if (followResponse.success && followResponse.data) {
+          this.isFollowing = followResponse.data.is_following
+        }
+      } else {
+        const results = await Promise.all([favoritePromise, likePromise])
+        const favoriteResponse = results[0]
+        const likeResponse = results[1]
+        
+        const imageUrls = post.images ? post.images.map(img => img.file_url) : []
+        const publishDate = this.formatTimestamp(post.create_time)
+
+        this.postDetail = {
+          postId: post.post_id,
+          imageUrls: imageUrls,
+          title: post.title,
+          description: post.description || '',
+          userAvatar: 'https://picsum.photos/60/60',
+          userId: post.user_id.toString(),
+          userName: `用户${post.user_id}`,
+          publishDate: publishDate,
+          likeCount: post.like_count,
+          isLiked: likeResponse.success && likeResponse.data ? likeResponse.data.has_liked : false,
+          favoriteCount: post.favorite_count,
+          isFavorited: favoriteResponse.success && favoriteResponse.data ? favoriteResponse.data.has_favorited : false
+        }
       }
     } else {
       ToastUtil.getInstance().show(detailResponse.message || '加载失败')
@@ -357,6 +441,7 @@ struct PostDetailPage {
           ShareDrawer({
             visible: this.showShareDrawer,
             isFavorited: this.postDetail?.isFavorited || false,
+            isOwnPost: this.isOwnPost,
             onClose: () => this.showShareDrawer = false,
             onCopyLink: () => this.handleCopyLink(),
             onShareWeChat: () => this.handleShareWeChat(),
@@ -367,7 +452,8 @@ struct PostDetailPage {
             onMessage: () => this.handleMessage(),
             onCollect: () => this.handleCollect(),
             onFeedback: () => this.handleFeedback(),
-            onReport: () => this.handleReport()
+            onReport: () => this.handleReport(),
+            onEdit: () => this.handleEdit()
           })
         }
 

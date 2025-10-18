@@ -178,3 +178,21 @@ export const getUserPosts = async (
   
   return httpRequest.get<UserPostsResponse>(`${url}?${queryString}`);
 }
+
+export interface FollowUserData {
+  message: string;
+}
+
+export const followUser = async (userId: string): Promise<ApiResponse<FollowUserData>> => {
+  const url = ApiConstants.USER_ENDPOINTS.FOLLOW_USER.replace('{user_id}', userId);
+  return httpRequest.post<FollowUserData>(url, {});
+}
+
+export interface FollowStatusData {
+  is_following: boolean;
+}
+
+export const getFollowStatus = async (userId: string): Promise<ApiResponse<FollowStatusData>> => {
+  const url = ApiConstants.USER_ENDPOINTS.GET_FOLLOW_STATUS.replace('{user_id}', userId);
+  return httpRequest.post<FollowStatusData>(url, {});
+}
