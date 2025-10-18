@@ -1,10 +1,24 @@
 import router from '@ohos.router'
 import { ImageCard, ImageItem } from '../components/ImageCard'
 
+interface FollowingUser {
+  userId: string;
+  userName: string;
+  userAvatar: string;
+}
+
 @Component
 export struct FollowPage {
   @State likedItems: Set<string> = new Set(['1', '3', '6', '8', '10'])
   @State likeCounts: Map<string, number> = new Map()
+  @State followingUsers: FollowingUser[] = [
+    { userId: '1', userName: '青青草原', userAvatar: 'https://picsum.photos/60/60' },
+    { userId: '2', userName: 'vivo影像', userAvatar: 'https://picsum.photos/61/61' },
+    { userId: '3', userName: 'pet_lover', userAvatar: 'https://picsum.photos/62/62' },
+    { userId: '4', userName: '美食达人', userAvatar: 'https://picsum.photos/63/63' },
+    { userId: '5', userName: '旅行者', userAvatar: 'https://picsum.photos/64/64' },
+    { userId: '6', userName: '摄影师小王', userAvatar: 'https://picsum.photos/65/65' }
+  ]
   @State imageList: ImageItem[] = [
     {
       id: '1',
@@ -232,37 +246,91 @@ export struct FollowPage {
   }
 
   @Builder
+  buildFollowingUsers() {
+    Column() {
+      Row() {
+        Text('我的关注')
+          .fontSize(16)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#333333')
+
+        Blank()
+
+        Image($r('app.media.ic_more'))
+          .width(20)
+          .height(20)
+          .fillColor('#666666')
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16, top: 12, bottom: 8 })
+
+      Scroll() {
+        Row({ space: 12 }) {
+          ForEach(this.followingUsers, (user: FollowingUser) => {
+            Column({ space: 6 }) {
+              Image(user.userAvatar)
+                .width(50)
+                .height(50)
+                .borderRadius(25)
+
+              Text(user.userName)
+                .fontSize(12)
+                .fontColor('#666666')
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+            }
+            .width(60)
+          })
+        }
+        .padding({ left: 16, right: 16 })
+      }
+      .width('100%')
+      .scrollable(ScrollDirection.Horizontal)
+      .scrollBar(BarState.Off)
+      .height(90)
+    }
+    .width('100%')
+    .backgroundColor('#FFFFFF')
+    .borderRadius(12)
+    .margin({ left: 16, right: 16, top: 8, bottom: 12 })
+  }
+
+  @Builder
   buildContent() {
     Scroll() {
-      WaterFlow() {
-        ForEach(this.imageList, (item: ImageItem, index: number) => {
-          FlowItem() {
-            ImageCard({
-              item: {
-                id: item.id,
-                imageUrl: item.imageUrl,
-                title: item.title,
-                description: item.description || '分享生活中的美好瞬间，记录每一个值得纪念的时刻。',
-                userAvatar: item.userAvatar,
-                userId: item.userId,
-                likeCount: this.getItemLikeCount(item.id),
-                isLiked: this.isItemLiked(item.id),
-                imageHeight: item.imageHeight
-              },
-              onLikeClick: (id: string) => {
-                this.handleLikeClick(id)
-              },
-              onCardClick: (id: string) => {
-                this.handleCardClick(id)
-              }
-            })
-          }
-        })
+      Column() {
+        this.buildFollowingUsers()
+
+        WaterFlow() {
+          ForEach(this.imageList, (item: ImageItem, index: number) => {
+            FlowItem() {
+              ImageCard({
+                item: {
+                  id: item.id,
+                  imageUrl: item.imageUrl,
+                  title: item.title,
+                  description: item.description || '分享生活中的美好瞬间，记录每一个值得纪念的时刻。',
+                  userAvatar: item.userAvatar,
+                  userId: item.userId,
+                  likeCount: this.getItemLikeCount(item.id),
+                  isLiked: this.isItemLiked(item.id),
+                  imageHeight: item.imageHeight
+                },
+                onLikeClick: (id: string) => {
+                  this.handleLikeClick(id)
+                },
+                onCardClick: (id: string) => {
+                  this.handleCardClick(id)
+                }
+              })
+            }
+          })
+        }
+        .columnsTemplate('1fr')
+        .rowsGap(20)
+        .padding({ left: 16, right: 16, bottom: 16 })
+        .width('100%')
       }
-      .columnsTemplate('1fr')
-      .rowsGap(20)
-      .padding({ left: 16, right: 16, top: 16, bottom: 16 })
-      .width('100%')
     }
     .width('100%')
     .layoutWeight(1)
