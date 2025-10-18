@@ -59,9 +59,11 @@ class HttpRequest {
     };
 
     if (!this.isNoAuthPath(url)) {
+      const tokenManager = TokenManager.getInstance();
+      await tokenManager.checkAndClearExpiredToken();
+      
       let token = this.authToken;
       if (!token) {
-        const tokenManager = TokenManager.getInstance();
         const savedToken = await tokenManager.getToken();
         if (savedToken) {
           token = savedToken;
@@ -124,10 +126,6 @@ class HttpRequest {
     console.log('[HttpRequest] 发起请求:', method, fullUrl);
     console.log('[HttpRequest] 请求头:', JSON.stringify(options.header));
     console.log('[HttpRequest] Authorization:', options.header?.['Authorization'] || '未携带token');
-    console.log('[HttpRequest] 请求数据类型:', isCreatePost ? 'multipart/form-data' : 'JSON');
-    if (isCreatePost && options.multiFormDataList) {
-      console.log('[HttpRequest] multipart 字段数量:', options.multiFormDataList.length);
-    }
 
     try {
       const response = await this.httpRequest.request(fullUrl, options);
@@ -170,62 +168,46 @@ class HttpRequest {
     return typeof obj.title === 'string' && Array.isArray(obj.imageFiles);
   }
 
-  /**
-   * 构建 multipart/form-data 格式的数据
-   * 用于文件上传（多图片上传）
-   */
   private buildMultipartFormData(data: CreatePostParams): http.MultiFormData[] {
     const formData: http.MultiFormData[] = [];
 
-    // 添加文本字段：title
     if (data.title) {
       formData.push({
         name: 'title',
         contentType: 'text/plain',
         data: new util.TextEncoder().encode(data.title).buffer
       });
-      console.log('[HttpRequest] 添加字段 title:', data.title);
     }
 
-    // 添加文本字段：description
     if (data.description) {
       formData.push({
         name: 'description',
         contentType: 'text/plain',
         data: new util.TextEncoder().encode(data.description).buffer
       });
-      console.log('[HttpRequest] 添加字段 description:', data.description);
     }
 
-    // 添加文本字段：tags（转为 JSON 字符串）
     if (data.tags && data.tags.length > 0) {
       formData.push({
         name: 'tags',
         contentType: 'text/plain',
         data: new util.TextEncoder().encode(JSON.stringify(data.tags)).buffer
       });
-      console.log('[HttpRequest] 添加字段 tags:', data.tags);
     }
 
-    // 添加文件字段：imageFiles（多个文件使用相同的 name）
     if (data.imageFiles && data.imageFiles.length > 0) {
       data.imageFiles.forEach((buffer: ArrayBuffer, index: number) => {
-        // 生成文件名（根据实际情况可以优化，比如传入真实文件名）
         const fileName = `image_${index}.jpg`;
         
         formData.push({
-          name: 'imageFiles',  // 使用相同的字段名，后端会接收为数组
-          contentType: 'image/jpeg',  // MIME 类型，可以根据实际图片格式调整
+          name: 'imageFiles',
+          contentType: 'image/jpeg',
           remoteFileName: fileName,
-          data: buffer  // 直接使用 ArrayBuffer，不转 Base64
+          data: buffer
         });
-        
-        console.log(`[HttpRequest] 添加文件 [${index}]: ${fileName}, 大小: ${buffer.byteLength} bytes`);
       });
-      console.log('[HttpRequest] 总共添加', data.imageFiles.length, '个文件');
     }
 
-    console.log('[HttpRequest] multipart/form-data 构建完成，总字段数:', formData.length);
     return formData;
   }
 

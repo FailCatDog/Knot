@@ -1,5 +1,5 @@
 export interface PostDetailEntity {
-  id: string
+  postId: string
   imageUrls: string[]
   title: string
   description: string
@@ -9,4 +9,6 @@ export interface PostDetailEntity {
   publishDate: string
   likeCount: number
   isLiked: boolean
+  favoriteCount: number
+  isFavorited: boolean
 }

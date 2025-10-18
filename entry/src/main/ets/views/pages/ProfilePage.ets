@@ -4,6 +4,7 @@ import { common } from '@kit.AbilityKit'
 import { LoginPage } from './LoginPage'
 import { RegisterPage } from './RegisterPage'
 import { ProfileViewModel } from '../../viewmodels/ProfileViewModel'
+import { LoadingComponent } from '../components/LoadingComponent'
 
 export enum AuthPageType {
   LOGIN = 0,
@@ -19,15 +20,10 @@ interface UserLogoutStatusChangedData {
   isLoggedIn: boolean;
 }
 
-interface PostDetailParam {
+interface PostDetailNavParam {
   post_id: string
-  user_id: number
-  title: string
-  description: string
-  like_count: number
-  create_time: string
-  image_urls: string[]
 }
+
 
 @Component
 export struct ProfilePage {
@@ -369,20 +365,8 @@ export struct ProfilePage {
 
   // 处理作品卡片点击
   handleWorkCardClick(id: string): void {
-    const post = this.viewModel.workPosts.find(p => p.post_id === id)
-    if (post) {
-      const imageUrls = post.images ? post.images.map(img => img.file_url) : []
-      const postData: PostDetailParam = {
-        post_id: post.post_id,
-        user_id: post.user_id,
-        title: post.title,
-        description: post.description || '',
-        like_count: post.like_count,
-        create_time: this.formatTimestamp(post.create_time),
-        image_urls: imageUrls
-      }
-      this.pathStack.pushPathByName('PostDetailPage', postData, false)
-    }
+    const param: PostDetailNavParam = { post_id: id }
+    this.pathStack.pushPathByName('PostDetailPage', param, false)
   }
 
   // 处理收藏卡片点击
@@ -393,8 +377,9 @@ export struct ProfilePage {
 
   @Builder
   WorkContent() {
-    if (this.viewModel.workItems.length === 0 && !this.viewModel.workLoading) {
-      // 空状态
+    if (this.viewModel.workLoading && this.viewModel.workItems.length === 0) {
+      LoadingComponent()
+    } else if (this.viewModel.workItems.length === 0 && !this.viewModel.workLoading) {
       Column() {
         Image($r('app.media.ic_discover'))
           .width(80)
@@ -493,39 +478,43 @@ export struct ProfilePage {
 
   @Builder
   LikeContent() {
-    WaterFlow() {
-      ForEach(this.viewModel.likeItems, (item: ImageItem, index: number) => {
-        FlowItem() {
-          ImageCard({
-            item: {
-              id: item.id,
-              imageUrl: item.imageUrl,
-              title: item.title,
-              userAvatar: item.userAvatar,
-              userId: item.userId,
-              description: item.description,
-              likeCount: this.viewModel.getLikeItemLikeCount(item.id),
-              isLiked: this.viewModel.isLikeItemLiked(item.id),
-              imageHeight: item.imageHeight
-            },
-            onLikeClick: (id: string) => this.viewModel.handleLikeLikeClick(id),
-            onCardClick: (id: string) => this.handleLikeCardClick(id)
+    if (this.viewModel.likeItems.length === 0) {
+      LoadingComponent()
+    } else {
+      WaterFlow() {
+        ForEach(this.viewModel.likeItems, (item: ImageItem, index: number) => {
+          FlowItem() {
+            ImageCard({
+              item: {
+                id: item.id,
+                imageUrl: item.imageUrl,
+                title: item.title,
+                userAvatar: item.userAvatar,
+                userId: item.userId,
+                description: item.description,
+                likeCount: this.viewModel.getLikeItemLikeCount(item.id),
+                isLiked: this.viewModel.isLikeItemLiked(item.id),
+                imageHeight: item.imageHeight
+              },
+              onLikeClick: (id: string) => this.viewModel.handleLikeLikeClick(id),
+              onCardClick: (id: string) => this.handleLikeCardClick(id)
+            })
+          }
+          .width('100%')
+          .constraintSize({
+            maxWidth: '100%',
+            minWidth: 0
           })
-        }
-        .width('100%')
-        .constraintSize({
-          maxWidth: '100%',
-          minWidth: 0
         })
-      })
+      }
+      .columnsTemplate('1fr 1fr')
+      .columnsGap(8)
+      .rowsGap(10)
+      .padding({ left: 8, right: 8, top: 8, bottom: 16 })
+      .width('100%')
+      .layoutWeight(1)
+      .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
     }
-    .columnsTemplate('1fr 1fr')
-    .columnsGap(8)
-    .rowsGap(10)
-    .padding({ left: 8, right: 8, top: 8, bottom: 16 })
-    .width('100%')
-    .layoutWeight(1)
-    .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
   }
 
 }

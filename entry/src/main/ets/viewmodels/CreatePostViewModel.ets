@@ -1,6 +1,6 @@
-import { submitImage, type CreatePostParams, type SubmitImageResponse } from '../services/api/PostApi';
-import promptAction from '@ohos.promptAction';
+import { submitImage, type CreatePostParams, type SubmitImageData } from '../services/api/PostApi';
 import { fileIo } from '@kit.CoreFileKit';
+import { ToastUtil } from '../common/utils/ToastUtil';
 
 export class CreatePostViewModel {
   title: string = '';
@@ -50,16 +50,12 @@ export class CreatePostViewModel {
   async submitPost(): Promise<boolean> {
     if (!this.validate() || this.isSubmitting) return false;
 
-    console.log('[CreatePostViewModel] 开始提交帖子');
     this.isSubmitting = true;
 
     const imageFiles: ArrayBuffer[] = [];
 
-    console.log('[CreatePostViewModel] 开始读取图片，总数:', this.selectedImages.length);
-
     for (let i = 0; i < this.selectedImages.length; i++) {
       const imageUri = this.selectedImages[i];
-      console.log('[CreatePostViewModel] 读取第', i + 1, '张图片:', imageUri);
 
       const file = fileIo.openSync(imageUri, fileIo.OpenMode.READ_ONLY);
       const stat: fileIo.Stat = fileIo.statSync(file.fd);
@@ -68,10 +64,7 @@ export class CreatePostViewModel {
       fileIo.closeSync(file);
 
       imageFiles.push(buffer);
-      console.log('[CreatePostViewModel] 第', i + 1, '张图片处理完成');
     }
-
-    console.log('[CreatePostViewModel] 所有图片读取完成，共', imageFiles.length, '张');
 
     const params: CreatePostParams = {
       title: this.title,
@@ -80,26 +73,13 @@ export class CreatePostViewModel {
       tags: this.tags.length > 0 ? this.tags : undefined
     };
 
-    console.log('[CreatePostViewModel] 请求参数:', {
-      title: params.title,
-      description: params.description,
-      imageFilesCount: imageFiles.length,
-      tags: params.tags
-    });
-
-    console.log('[CreatePostViewModel] 开始调用submitImage接口');
     const response = await submitImage(params);
-    console.log('[CreatePostViewModel] submitImage接口调用完成');
-
-    console.log('[CreatePostViewModel] 响应结果:', JSON.stringify(response));
 
     if (response.success && response.data) {
-      console.log('[CreatePostViewModel] 发布成功');
       this.showSuccess('发布成功');
       this.isSubmitting = false;
       return true;
     } else {
-      console.log('[CreatePostViewModel] 发布失败:', response.message);
       this.showError(response.message || '发布失败');
       this.isSubmitting = false;
       return false;
@@ -116,18 +96,10 @@ export class CreatePostViewModel {
   }
 
   private showError(message: string): void {
-    promptAction.showToast({
-      message: message,
-      duration: 2000,
-      bottom: 100
-    });
+    ToastUtil.getInstance().showWithBottom(message, 2000, 100);
   }
 
   private showSuccess(message: string): void {
-    promptAction.showToast({
-      message: message,
-      duration: 2000,
-      bottom: 100
-    });
+    ToastUtil.getInstance().showWithBottom(message, 2000, 100);
   }
 }
