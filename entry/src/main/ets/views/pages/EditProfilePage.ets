@@ -1,6 +1,6 @@
-import prompt from '@ohos.prompt'
 import { EditProfileViewModel } from '../../viewmodels/EditProfileViewModel'
 import { common } from '@kit.AbilityKit'
+import { ToastUtil } from '../../common/utils/ToastUtil'
 
 @Builder
 export function EditProfilePageBuilder() {
@@ -15,7 +15,7 @@ export struct EditProfilePage {
   async aboutToAppear() {
     const result = await this.viewModel.loadUserInfo()
     if (!result.success) {
-      prompt.showToast({ message: result.message })
+      ToastUtil.getInstance().show(result.message);
     }
   }
 
@@ -230,7 +230,7 @@ export struct EditProfilePage {
     const result = await this.viewModel.saveUserInfo()
     
     if (result.success && result.userInfo) {
-      prompt.showToast({ message: result.message })
+      ToastUtil.getInstance().show(result.message);
       
       try {
         let context = getContext(this) as common.UIAbilityContext
@@ -245,7 +245,7 @@ export struct EditProfilePage {
       
       this.pathStack.pop()
     } else if (this.viewModel.errorMessage) {
-      prompt.showToast({ message: this.viewModel.errorMessage })
+      ToastUtil.getInstance().show(this.viewModel.errorMessage);
     }
   }
 }

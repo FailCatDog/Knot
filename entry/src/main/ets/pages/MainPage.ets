@@ -2,6 +2,8 @@ import { FollowPage } from '../views/pages/FollowPage'
 import { DiscoverPage } from '../views/pages/DiscoverPage'
 import { GalleryPage } from '../views/pages/GalleryPage'
 import { ProfilePage } from '../views/pages/ProfilePage'
+import { TokenManager } from '../services/TokenManager'
+import { ToastUtil } from '../common/utils/ToastUtil'
 
 @Entry
 @Component
@@ -14,6 +16,13 @@ struct MainPage {
   aboutToAppear(): void {
     console.log('[MainPage] aboutToAppear called')
     console.log('[MainPage] pathStack created:', !!this.pathStack)
+    
+    TokenManager.setTokenExpiredCallback(() => {
+      ToastUtil.getInstance().show('登录已过期，请重新登录')
+      this.currentIndex = 4
+      this.lastValidIndex = 4
+      this.tabsController.changeIndex(4)
+    })
   }
 
   build() {

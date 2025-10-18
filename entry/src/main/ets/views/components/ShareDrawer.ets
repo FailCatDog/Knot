@@ -1,6 +1,7 @@
 @Component
 export struct ShareDrawer {
   @Prop visible: boolean
+  @Prop isFavorited: boolean = false
   onClose: () => void = () => {}
   onCopyLink: () => void = () => {}
   onShareWeChat: () => void = () => {}
@@ -65,7 +66,7 @@ export struct ShareDrawer {
             Row() {
               this.buildShareItem('转发动态', $r('app.media.ic_repost'), this.onRepost)
               this.buildShareItem('私信好友', $r('app.media.ic_send'), this.onMessage)
-              this.buildShareItem('收藏', $r('app.media.ic_collect'), this.onCollect)
+              this.buildShareItem(this.isFavorited ? '取消收藏' : '收藏', this.isFavorited ? $r('app.media.ic_favorite_filled') : $r('app.media.ic_favorite_outline'), this.onCollect)
               this.buildShareItem('内容反馈', $r('app.media.ic_heartbreak'), this.onFeedback)
               this.buildShareItem('举报', $r('app.media.ic_report'), this.onReport)
             }

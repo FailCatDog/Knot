@@ -1,7 +1,7 @@
-import prompt from '@ohos.prompt'
 import { logout, LogoutRequest } from '../services/api/UserApi'
 import { TokenManager } from '../services/TokenManager'
 import { common } from '@kit.AbilityKit'
+import { ToastUtil } from '../common/utils/ToastUtil'
 
 @Builder
 export function SettingPageBuilder() {
@@ -50,7 +50,7 @@ export struct SettingPage {
             const token = await tokenManager.getToken()
             
             if (!token) {
-              prompt.showToast({ message: '请先登录' })
+              ToastUtil.getInstance().show('请先登录');
               return
             }
             
@@ -65,7 +65,7 @@ export struct SettingPage {
             const token = await tokenManager.getToken()
             
             if (!token) {
-              prompt.showToast({ message: '请先登录' })
+              ToastUtil.getInstance().show('请先登录');
               return
             }
             
@@ -76,36 +76,28 @@ export struct SettingPage {
 
         ListItem() {
           this.buildSettingItem('隐私设置', () => {
-            prompt.showToast({
-              message: '功能开发中'
-            })
+            ToastUtil.getInstance().show('功能开发中');
           })
         }
         .height('auto')
 
         ListItem() {
           this.buildSettingItem('通知设置', () => {
-            prompt.showToast({
-              message: '功能开发中'
-            })
+            ToastUtil.getInstance().show('功能开发中');
           })
         }
         .height('auto')
 
         ListItem() {
           this.buildSettingItem('通用设置', () => {
-            prompt.showToast({
-              message: '功能开发中'
-            })
+            ToastUtil.getInstance().show('功能开发中');
           })
         }
         .height('auto')
 
         ListItem() {
           this.buildSettingItem('关于应用', () => {
-            prompt.showToast({
-              message: '功能开发中'
-            })
+            ToastUtil.getInstance().show('功能开发中');
           })
         }
         .height('auto')
@@ -174,9 +166,7 @@ export struct SettingPage {
 
         const response = await logout(logoutParam)
         if (response.success) {
-          prompt.showToast({
-            message: '登出成功'
-          })
+          ToastUtil.getInstance().show('登出成功');
           await tokenManager.clearToken()
           
           try {
@@ -191,21 +181,15 @@ export struct SettingPage {
           
           this.pathStack.clear()
         } else {
-          prompt.showToast({
-            message: response.message || '登出失败'
-          })
+          ToastUtil.getInstance().show(response.message || '登出失败');
         }
       } else {
-        prompt.showToast({
-          message: '未找到用户token'
-        })
+        ToastUtil.getInstance().show('未找到用户token');
         this.pathStack.clear()
       }
     } catch (error) {
       console.error('登出请求失败:', error)
-      prompt.showToast({
-        message: '网络请求失败'
-      })
+      ToastUtil.getInstance().show('网络请求失败');
     }
   }
 }

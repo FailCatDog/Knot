@@ -21,6 +21,11 @@ interface PostEndpoints {
   ADD_POST_IMAGE: string;
   DELETE_POST_IMAGE: string;
   UPDATE_POST_IMAGES_ORDER: string;
+  FAVORITE_POST: string;
+  GET_FAVORITE_STATUS: string;
+  LIKE_POST: string;
+  UNLIKE_POST: string;
+  GET_LIKE_STATUS: string;
 }
 
 interface UserEndpoints {
@@ -44,7 +49,12 @@ export class ApiConstants {
     GET_USER_POSTS: '/users/{user_id}/posts',
     ADD_POST_IMAGE: '/posts/{post_id}/images',
     DELETE_POST_IMAGE: '/posts/{post_id}/images/{image_id}',
-    UPDATE_POST_IMAGES_ORDER: '/posts/{post_id}/images/order'
+    UPDATE_POST_IMAGES_ORDER: '/posts/{post_id}/images/order',
+    FAVORITE_POST: '/posts/{post_id}/favorite',
+    GET_FAVORITE_STATUS: '/posts/{post_id}/favorite/status',
+    LIKE_POST: '/posts/{post_id}/like',
+    UNLIKE_POST: '/posts/{post_id}/like',
+    GET_LIKE_STATUS: '/posts/{post_id}/like/status'
   };
 
   static readonly USER_ENDPOINTS: UserEndpoints = {
