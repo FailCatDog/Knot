@@ -1,6 +1,6 @@
 import { ImageCard, ImageItem } from '../components/ImageCard'
 import { DiscoverViewModel } from '../../viewmodels/DiscoverViewModel'
-import { PostEntity } from '../../services/api/PostApi'
+import { PostEntity, likePost, unlikePost } from '../../services/api/PostApi'
 import { PostStateManager } from '../../common/utils/PostStateManager'
 import { LoadingComponent } from '../components/LoadingComponent'
 
@@ -68,15 +68,22 @@ export struct DiscoverPage {
 
   convertPostToImageItem(post: PostEntity): ImageItem {
     const firstImage = post.images && post.images.length > 0 ? post.images[0] : null
+    const isLiked = this.likedItems.has(post.post_id) ? this.isItemLiked(post.post_id) : post.has_liked
+    const likeCount = this.likeCounts.has(post.post_id) ? this.getItemLikeCount(post.post_id) : post.like_count
+    
+    if (post.has_liked && !this.likedItems.has(post.post_id)) {
+      this.likedItems.add(post.post_id)
+    }
+    
     return {
       id: post.post_id,
       imageUrl: firstImage?.file_url || '',
       title: post.title,
       description: post.description || '',
-      userAvatar: 'https://picsum.photos/40/40',
-      userId: `用户${post.user_id}`,
-      likeCount: post.like_count,
-      isLiked: this.likedItems.has(post.post_id),
+      userAvatar: post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/40/40',
+      userId: post.author?.username || post.username || `用户${post.user_id}`,
+      likeCount: likeCount,
+      isLiked: isLiked,
       imageHeight: firstImage ? Math.min(Math.max(firstImage.height / firstImage.width * 280, 150), 420) : 280
     }
   }
@@ -182,16 +189,17 @@ export struct DiscoverPage {
     })
   }
 
-  handleLikeClick(id: string): void {
-    const currentCount = this.getItemLikeCount(id)
+  async handleLikeClick(id: string): Promise<void> {
     const isCurrentlyLiked = this.isItemLiked(id)
+    const response = isCurrentlyLiked ? await unlikePost(id) : await likePost(id)
 
-    if (isCurrentlyLiked) {
-      this.likedItems.delete(id)
-      this.likeCounts.set(id, currentCount - 1)
-    } else {
-      this.likedItems.add(id)
-      this.likeCounts.set(id, currentCount + 1)
+    if (response.success && response.data) {
+      if (response.data.has_liked) {
+        this.likedItems.add(id)
+      } else {
+        this.likedItems.delete(id)
+      }
+      this.likeCounts.set(id, response.data.like_count)
     }
   }
 

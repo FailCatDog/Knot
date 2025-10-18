@@ -121,7 +121,10 @@ struct PostDetailPage {
             .width('100%')
             .height(400)
             .autoPlay(false)
-            .indicator(this.postDetail.imageUrls.length > 1)
+            .indicator(this.postDetail.imageUrls.length > 1 ? 
+              DotIndicator.dot()
+                .color('#66FFFFFF')
+                .selectedColor('#ffdd0223') : false)
             .loop(false)
             .onChange((index: number) => {
               this.currentImageIndex = index
@@ -343,25 +346,24 @@ struct PostDetailPage {
 
     this.isLoading = true
 
-    const token = await TokenManager.getInstance().getToken()
-    if (token) {
-      const userInfoResponse = await getCurrentUserInfo()
-      if (userInfoResponse.success && userInfoResponse.data) {
-        this.currentUserId = userInfoResponse.data.user_id
-      }
+    const tokenManager = TokenManager.getInstance()
+    const cachedUserId = await tokenManager.getUserId()
+    if (cachedUserId) {
+      this.currentUserId = cachedUserId
     }
 
     const detailResponse = await getPostDetail(this.postId)
 
     if (detailResponse.success && detailResponse.data) {
       const post = detailResponse.data.post
-      this.isOwnPost = this.currentUserId === post.user_id.toString()
+      const postUserId = typeof post.user_id === 'number' ? post.user_id.toString() : post.user_id
+      this.isOwnPost = this.currentUserId === postUserId
 
       const favoritePromise = getFavoriteStatus(this.postId)
       const likePromise = getLikeStatus(this.postId)
       
       if (!this.isOwnPost) {
-        const followPromise = getFollowStatus(post.user_id.toString())
+        const followPromise = getFollowStatus(postUserId)
         const results = await Promise.all([favoritePromise, likePromise, followPromise])
         const favoriteResponse = results[0]
         const likeResponse = results[1]
@@ -375,9 +377,9 @@ struct PostDetailPage {
           imageUrls: imageUrls,
           title: post.title,
           description: post.description || '',
-          userAvatar: 'https://picsum.photos/60/60',
-          userId: post.user_id.toString(),
-          userName: `用户${post.user_id}`,
+          userAvatar: post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/60/60',
+          userId: postUserId,
+          userName: post.author?.username || post.username || `用户${postUserId}`,
           publishDate: publishDate,
           likeCount: post.like_count,
           isLiked: likeResponse.success && likeResponse.data ? likeResponse.data.has_liked : false,
@@ -401,9 +403,9 @@ struct PostDetailPage {
           imageUrls: imageUrls,
           title: post.title,
           description: post.description || '',
-          userAvatar: 'https://picsum.photos/60/60',
-          userId: post.user_id.toString(),
-          userName: `用户${post.user_id}`,
+          userAvatar: post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/60/60',
+          userId: postUserId,
+          userName: post.author?.username || post.username || `用户${postUserId}`,
           publishDate: publishDate,
           likeCount: post.like_count,
           isLiked: likeResponse.success && likeResponse.data ? likeResponse.data.has_liked : false,

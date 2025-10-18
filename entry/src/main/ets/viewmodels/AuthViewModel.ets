@@ -55,9 +55,9 @@ export class AuthViewModel {
       if (response.success && response.data) {
         const loginData: LoginResponse = response.data
         
-        // 保存token
         const tokenManager = TokenManager.getInstance()
         await tokenManager.saveToken(loginData.access_token)
+        await tokenManager.saveUserId(loginData.user.user_id)
         
         console.log('[AuthViewModel] 登录成功，用户:', loginData.user.username)
         

@@ -5,7 +5,7 @@ import { ToastUtil } from '../common/utils/ToastUtil';
 export class DiscoverViewModel {
   posts: PostEntity[] = [];
   currentPage: number = 1;
-  pageSize: number = 20;
+  pageSize: number = 8;
   total: number = 0;
   isLoading: boolean = false;
   hasMore: boolean = true;
