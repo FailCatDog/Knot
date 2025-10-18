@@ -84,8 +84,10 @@ export class ProfileViewModel {
     }
   }
 
-  // 退出登录
-  logout(): void {
+  async logout(): Promise<void> {
+    const tokenManager = TokenManager.getInstance()
+    await tokenManager.clearToken()
+    
     this.isUserLoggedIn = false
     this.userInfo = {
       id: 0,

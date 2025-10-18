@@ -174,7 +174,7 @@ export const getUserPosts = async (
   const page: number = param.page || 1;
   const pageSize: number = param.pageSize || 20;
   const url: string = ApiConstants.ENDPOINTS.GET_USER_POSTS.replace('{user_id}', user_id.toString());
-  const queryString: string = `page=${page}&pageSize=${pageSize}`;
+  const queryString: string = `page=${page}&page_size=${pageSize}`;
   
   return httpRequest.get<UserPostsResponse>(`${url}?${queryString}`);
 }
@@ -188,11 +188,39 @@ export const followUser = async (userId: string): Promise<ApiResponse<FollowUser
   return httpRequest.post<FollowUserData>(url, {});
 }
 
+export const unfollowUser = async (userId: string): Promise<ApiResponse<FollowUserData>> => {
+  const url = ApiConstants.USER_ENDPOINTS.FOLLOW_USER.replace('{user_id}', userId);
+  return httpRequest.delete<FollowUserData>(url);
+}
+
 export interface FollowStatusData {
   is_following: boolean;
 }
 
 export const getFollowStatus = async (userId: string): Promise<ApiResponse<FollowStatusData>> => {
   const url = ApiConstants.USER_ENDPOINTS.GET_FOLLOW_STATUS.replace('{user_id}', userId);
-  return httpRequest.post<FollowStatusData>(url, {});
+  return httpRequest.get<FollowStatusData>(url);
+}
+
+export interface FollowingUserInfo {
+  user_id: string;
+  username: string;
+  real_name: string;
+  avatar_url: string;
+  bio: string;
+  follower_count: number;
+  is_following: boolean;
+  followed_at: number;
+}
+
+export interface FollowingListData {
+  page: number;
+  page_size: number;
+  total: number;
+  users: FollowingUserInfo[];
+}
+
+export const getFollowingList = async (userId: string): Promise<ApiResponse<FollowingListData>> => {
+  const url = ApiConstants.USER_ENDPOINTS.GET_FOLLOWING_LIST.replace('{user_id}', userId);
+  return httpRequest.get<FollowingListData>(url);
 }

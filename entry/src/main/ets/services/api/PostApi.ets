@@ -30,14 +30,25 @@ export interface ImageEntity {
   mime_type: string;
   create_time: number;
 }
+export interface PostAuthor {
+  user_id: number;
+  username: string;
+  avatar_url: string;
+}
+
 export interface PostEntity {
   post_id: string;
-  user_id: number;
+  user_id: number | string;
+  username?: string;
+  avatar_url?: string;
+  author?: PostAuthor;
   title: string;
   description: string | null;
   image_count: number;
   like_count: number;
+  has_liked: boolean;
   favorite_count: number;
+  has_favorited: boolean;
   view_count: number;
   status: "APPROVED" | "PENDING" | "REJECTED";
   create_time: number;
@@ -70,7 +81,7 @@ export interface GetPostDetailData {
 
 export const getPosts = async (page: number, pageSize: number): Promise<ApiResponse<GetPostsData>> => {
   console.log('[PostApi] getPosts 被调用，参数:', { page, pageSize });
-  return httpRequest.get<GetPostsData>(`${ApiConstants.ENDPOINTS.GET_FEED}?page=${page}&pageSize=${pageSize}`);
+  return httpRequest.get<GetPostsData>(`${ApiConstants.ENDPOINTS.GET_FEED}?page=${page}&page_size=${pageSize}`);
 }
 
 export const getPostDetail = async (postId: string): Promise<ApiResponse<GetPostDetailData>> => {
@@ -129,4 +140,9 @@ export interface LikeStatusData {
 export const getLikeStatus = async (postId: string): Promise<ApiResponse<LikeStatusData>> => {
   const url = ApiConstants.ENDPOINTS.GET_LIKE_STATUS.replace('{post_id}', postId);
   return httpRequest.get<LikeStatusData>(url);
+}
+
+export const getUserPosts = async (userId: string, page: number = 1, pageSize: number = 20): Promise<ApiResponse<GetPostsData>> => {
+  const url = ApiConstants.ENDPOINTS.GET_USER_POSTS.replace('{user_id}', userId);
+  return httpRequest.get<GetPostsData>(`${url}?page=${page}&page_size=${pageSize}`);
 }
