@@ -5,6 +5,8 @@ import { LoginPage } from './LoginPage'
 import { RegisterPage } from './RegisterPage'
 import { ProfileViewModel } from '../../viewmodels/ProfileViewModel'
 import { LoadingComponent } from '../components/LoadingComponent'
+import { ApiResponse } from '../../services/api/HttpRequest'
+import { LikePostData } from '../../services/api/PostApi'
 
 export enum AuthPageType {
   LOGIN = 0,
@@ -22,6 +24,12 @@ interface UserLogoutStatusChangedData {
 
 interface PostDetailNavParam {
   post_id: string
+  user_id?: number | string
+  title?: string
+  description?: string
+  like_count?: number
+  create_time?: string
+  image_urls?: string[]
 }
 
 
@@ -32,10 +40,20 @@ export struct ProfilePage {
   @State currentAuthPage: AuthPageType = AuthPageType.LOGIN
   @State showAuthView: boolean = false
   @State currentIndex: number = 0
+  
+  // 作品点赞状态
+  @State workLikedItems: Set<string> = new Set()
+  @State workLikeCounts: Map<string, number> = new Map()
+  
+  // 收藏点赞状态
+  @State likeLikedItems: Set<string> = new Set()
+  @State likeLikeCounts: Map<string, number> = new Map()
 
   aboutToAppear(): void {
     // 使用ViewModel检查登录状态
-    this.viewModel.checkUserLoginStatus()
+    this.viewModel.checkUserLoginStatus().then(() => {
+      this.initializeLikeStates()
+    })
 
     try {
       let context = getContext(this) as common.UIAbilityContext
@@ -44,6 +62,10 @@ export struct ProfilePage {
       eventHub.on('userLoginStatusChanged', (data: UserLoginStatusChangedData) => {
         if (data.userInfo) {
           this.viewModel.updateUserInfo(data.userInfo)
+          // 延迟初始化点赞状态，等待数据加载
+          setTimeout(() => {
+            this.initializeLikeStates()
+          }, 500)
         }
         this.showAuthView = false
       })
@@ -55,6 +77,45 @@ export struct ProfilePage {
     } catch (error) {
       console.error('[ProfilePage] 监听事件失败:', error)
     }
+  }
+
+  // 初始化点赞状态
+  initializeLikeStates(): void {
+    console.log('[ProfilePage] 初始化点赞状态 - 作品数量:', this.viewModel.workItems.length, '收藏数量:', this.viewModel.likeItems.length)
+    
+    // 初始化作品点赞状态
+    this.viewModel.workItems.forEach(item => {
+      if (!this.workLikeCounts.has(item.id)) {
+        this.workLikeCounts.set(item.id, item.likeCount)
+      }
+      if (item.isLiked && !this.workLikedItems.has(item.id)) {
+        this.workLikedItems.add(item.id)
+        console.log('[ProfilePage] 作品已点赞:', item.id, '点赞数:', item.likeCount)
+      }
+    })
+    
+    // 初始化收藏点赞状态
+    this.viewModel.likeItems.forEach(item => {
+      console.log('[ProfilePage] 处理收藏帖子:', item.id, 'isLiked:', item.isLiked, 'likeCount:', item.likeCount)
+      
+      if (!this.likeLikeCounts.has(item.id)) {
+        this.likeLikeCounts.set(item.id, item.likeCount)
+      }
+      if (item.isLiked && !this.likeLikedItems.has(item.id)) {
+        this.likeLikedItems.add(item.id)
+        console.log('[ProfilePage] ✅ 添加到likeLikedItems:', item.id)
+      } else if (!item.isLiked) {
+        console.log('[ProfilePage] ❌ 未点赞，不添加:', item.id)
+      }
+    })
+    
+    // 触发UI更新（作品和收藏都需要）
+    this.workLikedItems = new Set(this.workLikedItems)
+    this.workLikeCounts = new Map(this.workLikeCounts)
+    this.likeLikedItems = new Set(this.likeLikedItems)
+    this.likeLikeCounts = new Map(this.likeLikeCounts)
+    
+    console.log('[ProfilePage] 点赞状态初始化完成 - 作品点赞:', this.workLikedItems.size, '收藏点赞:', this.likeLikedItems.size)
   }
 
   aboutToDisappear(): void {
@@ -192,6 +253,7 @@ export struct ProfilePage {
                   .fillColor('#fff');
               }
               .backgroundColor(Color.Transparent)
+              .margin({right:5})
               .onClick(() => {
                 console.log('[ProfilePage] 点击设置图标')
                 console.log('[ProfilePage] pathStack exists:', !!this.pathStack)
@@ -246,6 +308,11 @@ export struct ProfilePage {
           .barPosition(BarPosition.Start)
           .onChange((index: number) => {
             this.currentIndex = index;
+            // 切换到收藏标签时，重新初始化点赞状态
+            if (index === 1) {
+              console.log('[ProfilePage] 切换到收藏标签，重新初始化点赞状态')
+              this.initializeLikeStates()
+            }
           })
           .width('100%')
           .padding({ left: 0, right: 0, top: -15, bottom: 0 })
@@ -371,8 +438,78 @@ export struct ProfilePage {
 
   // 处理收藏卡片点击
   handleLikeCardClick(id: string): void {
-    // 目前收藏功能尚未实现，暂时不跳转
-    // TODO: 实现收藏功能后添加跳转逻辑
+    const post = this.viewModel.likePosts.find(p => p.post_id === id)
+    if (post) {
+      const imageUrls = post.images ? post.images.map(img => img.file_url) : []
+      const postData: PostDetailNavParam = {
+        post_id: post.post_id,
+        user_id: post.user_id,
+        title: post.title,
+        description: post.description || '',
+        like_count: post.like_count,
+        create_time: this.formatTimestamp(post.create_time),
+        image_urls: imageUrls
+      }
+      this.pathStack.pushPathByName('PostDetailPage', postData, false)
+    }
+  }
+
+  // 处理作品点赞
+  async handleWorkLikeClick(id: string): Promise<void> {
+    const isCurrentlyLiked: boolean = this.workLikedItems.has(id)
+    const result: ApiResponse<LikePostData> = await this.viewModel.handleWorkLikeClick(id)
+    
+    if (result.success && result.data) {
+      if (result.data.has_liked) {
+        this.workLikedItems.add(id)
+      } else {
+        this.workLikedItems.delete(id)
+      }
+      this.workLikeCounts.set(id, result.data.like_count)
+      
+      // 触发UI更新
+      this.workLikedItems = new Set(this.workLikedItems)
+      this.workLikeCounts = new Map(this.workLikeCounts)
+    }
+  }
+
+  // 处理收藏点赞
+  async handleLikeLikeClick(id: string): Promise<void> {
+    const isCurrentlyLiked: boolean = this.likeLikedItems.has(id)
+    const result: ApiResponse<LikePostData> = await this.viewModel.handleLikeLikeClick(id)
+    
+    if (result.success && result.data) {
+      if (result.data.has_liked) {
+        this.likeLikedItems.add(id)
+      } else {
+        this.likeLikedItems.delete(id)
+      }
+      this.likeLikeCounts.set(id, result.data.like_count)
+      
+      // 触发UI更新
+      this.likeLikedItems = new Set(this.likeLikedItems)
+      this.likeLikeCounts = new Map(this.likeLikeCounts)
+    }
+  }
+
+  // 获取作品点赞状态
+  isWorkItemLiked(id: string): boolean {
+    return this.workLikedItems.has(id)
+  }
+
+  // 获取作品点赞数
+  getWorkItemLikeCount(id: string): number {
+    return this.workLikeCounts.get(id) || 0
+  }
+
+  // 获取收藏点赞状态
+  isLikeItemLiked(id: string): boolean {
+    return this.likeLikedItems.has(id)
+  }
+
+  // 获取收藏点赞数
+  getLikeItemLikeCount(id: string): number {
+    return this.likeLikeCounts.get(id) || 0
   }
 
   @Builder
@@ -412,11 +549,11 @@ export struct ProfilePage {
                 userAvatar: item.userAvatar,
                 userId: item.userId,
                 description: item.description,
-                likeCount: this.viewModel.getWorkItemLikeCount(item.id),
-                isLiked: this.viewModel.isWorkItemLiked(item.id),
+                likeCount: this.getWorkItemLikeCount(item.id),
+                isLiked: this.isWorkItemLiked(item.id),
                 imageHeight: item.imageHeight
               },
-              onLikeClick: (id: string) => this.viewModel.handleWorkLikeClick(id),
+              onLikeClick: async (id: string) => await this.handleWorkLikeClick(id),
               onCardClick: (id: string) => this.handleWorkCardClick(id)
             })
           }
@@ -492,11 +629,11 @@ export struct ProfilePage {
                 userAvatar: item.userAvatar,
                 userId: item.userId,
                 description: item.description,
-                likeCount: this.viewModel.getLikeItemLikeCount(item.id),
-                isLiked: this.viewModel.isLikeItemLiked(item.id),
+                likeCount: this.getLikeItemLikeCount(item.id),
+                isLiked: this.isLikeItemLiked(item.id),
                 imageHeight: item.imageHeight
               },
-              onLikeClick: (id: string) => this.viewModel.handleLikeLikeClick(id),
+              onLikeClick: async (id: string) => await this.handleLikeLikeClick(id),
               onCardClick: (id: string) => this.handleLikeCardClick(id)
             })
           }

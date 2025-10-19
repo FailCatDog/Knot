@@ -36,7 +36,10 @@ interface UserEndpoints {
   CHANGE_PASSWORD: string;
   FOLLOW_USER: string;
   GET_FOLLOW_STATUS: string;
+  GET_MY_FAVORITES: string;
+  GET_USER_PUBLIC_INFO: string;
   GET_FOLLOWING_LIST: string;
+  UPLOAD_AVATAR: string;
 }
 
 export class ApiConstants {
@@ -64,11 +67,14 @@ export class ApiConstants {
     REGISTER: '/auth/register',
     LOGIN: '/auth/login',
     GET_USER_INFO: '/users/profile',
-    UPDATE_USER_INFO: '/users/info',
+    UPDATE_USER_INFO: '/users/profile',
     CHANGE_PASSWORD: '/auth/password',
     FOLLOW_USER: '/users/{user_id}/follow',
     GET_FOLLOW_STATUS: '/users/{user_id}/follow/status',
-    GET_FOLLOWING_LIST: '/users/{user_id}/following'
+    GET_FOLLOWING_LIST: '/users/{user_id}/following',
+    GET_MY_FAVORITES: '/my/favorites',
+    GET_USER_PUBLIC_INFO: '/users/{user_id}',
+    UPLOAD_AVATAR: '/users/avatar'
   };
 
   static readonly HTTP_STATUS: HttpStatus = {
