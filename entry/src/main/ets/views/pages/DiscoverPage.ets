@@ -182,6 +182,7 @@ export struct DiscoverPage {
     .padding({ left: 8, right: 8, top: 8, bottom: 16 })
     .width('100%')
     .layoutWeight(1)
+    .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
     .onReachEnd(() => {
       if (this.viewModel.hasMore && !this.viewModel.isLoading) {
         this.loadMoreData()

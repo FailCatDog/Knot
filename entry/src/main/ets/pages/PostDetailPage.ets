@@ -7,6 +7,10 @@ import { LoadingComponent } from '../views/components/LoadingComponent'
 import { followUser, getCurrentUserInfo, getFollowStatus } from '../services/api/UserApi'
 import { TokenManager } from '../services/TokenManager'
 
+interface UserProfileParam {
+  user_id: string
+}
+
 @Builder
 export function PostDetailPageBuilder() {
   PostDetailPage()
@@ -50,11 +54,17 @@ struct PostDetailPage {
             .width(32)
             .height(32)
             .borderRadius(16)
+            .onClick(() => {
+              this.handleUserClick()
+            })
 
           Text(this.postDetail.userName)
             .fontSize(16)
             .fontColor('#333333')
             .fontWeight(FontWeight.Medium)
+            .onClick(() => {
+              this.handleUserClick()
+            })
 
           if (!this.isOwnPost) {
             Row({ space: 4 }) {
@@ -216,6 +226,23 @@ struct PostDetailPage {
 
   handleShare(): void {
     this.showShareDrawer = true
+  }
+
+  handleUserClick(): void {
+    if (!this.postDetail || !this.postDetail.userId) return
+    
+    // 如果是自己的帖子，不跳转（或者跳转到自己的个人页面）
+    if (this.isOwnPost) {
+      console.log('[PostDetailPage] 点击了自己的头像，不跳转')
+      return
+    }
+    
+    // 跳转到用户公开页面
+    console.log('[PostDetailPage] 跳转到用户页面:', this.postDetail.userId)
+    const param: UserProfileParam = {
+      user_id: this.postDetail.userId
+    }
+    this.navPathStack.pushPathByName('UserProfilePage', param, false)
   }
 
   async handleFollow(): Promise<void> {

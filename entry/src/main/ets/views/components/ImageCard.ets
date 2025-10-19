@@ -109,6 +109,7 @@ export struct ImageCard {
       .width('100%')
       .backgroundColor('#F5F5F5')
     }
+    .borderRadius(12)//由于色差，为我的页面的帖子渲染添加圆角
     .width('100%')
     .clip(true)
     .onClick(() => {

@@ -13,6 +13,9 @@ export struct EditProfilePage {
   @State viewModel: EditProfileViewModel = new EditProfileViewModel()
 
   async aboutToAppear() {
+    console.log('[EditProfilePage] aboutToAppear - 重新加载用户信息')
+    // 创建新的ViewModel实例，避免缓存问题
+    this.viewModel = new EditProfileViewModel()
     const result = await this.viewModel.loadUserInfo()
     if (!result.success) {
       ToastUtil.getInstance().show(result.message);
@@ -89,6 +92,11 @@ export struct EditProfilePage {
         .padding(40)
       } else {
         List() {
+          // 头像上传（放在第一条）
+          ListItem() {
+            this.buildAvatarUpload()
+          }
+
           ListItem() {
             this.buildInputItem('真实姓名', this.viewModel.realName, (value: string) => {
               this.viewModel.realName = value
@@ -122,12 +130,6 @@ export struct EditProfilePage {
               this.viewModel.location = value
             }, false)
           }
-
-          ListItem() {
-            this.buildInputItem('头像URL', this.viewModel.avatarUrl, (value: string) => {
-              this.viewModel.avatarUrl = value
-            }, false)
-          }
         }
         .layoutWeight(1)
         .backgroundColor('#F5F5F5')
@@ -142,6 +144,67 @@ export struct EditProfilePage {
       .backgroundColor('#F5F5F5')
     }
     .hideTitleBar(true)
+  }
+
+  @Builder
+  buildAvatarUpload() {
+    Column() {
+      Row() {
+        Text('头像')
+          .fontSize(16)
+          .fontColor('#1A1A1A')
+          .width(80)
+
+        Row({ space: 12 }) {
+          // 头像预览
+          if (this.viewModel.isUploadingAvatar) {
+            Column() {
+              LoadingProgress()
+                .width(60)
+                .height(60)
+                .color('#ffdd0223')
+            }
+            .width(60)
+            .height(60)
+            .justifyContent(FlexAlign.Center)
+            .borderRadius(30)
+            .backgroundColor('#F5F5F5')
+          } else {
+            Image(this.viewModel.avatarUrl && this.viewModel.avatarUrl.trim() !== '' ? 
+              this.viewModel.avatarUrl : $r('app.media.head'))
+              .width(60)
+              .height(60)
+              .borderRadius(30)
+              .objectFit(ImageFit.Cover)
+              .alt($r('app.media.head'))
+          }
+
+          // 上传按钮
+          Button(this.viewModel.isUploadingAvatar ? '上传中...' : '点击上传')
+            .fontSize(14)
+            .fontColor('#ffdd0223')
+            .backgroundColor('#FFF')
+            .border({ width: 1, color: '#ffdd0223' })
+            .borderRadius(4)
+            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+            .enabled(!this.viewModel.isUploadingAvatar)
+            .onClick(async () => {
+              const result = await this.viewModel.selectAndUploadAvatar()
+              if (result.success) {
+                ToastUtil.getInstance().show(result.message)
+              } else {
+                ToastUtil.getInstance().show(result.message || '上传失败')
+              }
+            })
+        }
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Start)
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+    }
+    .width('100%')
+    .backgroundColor('#FFFFFF')
   }
 
   @Builder
