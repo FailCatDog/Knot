@@ -66,6 +66,17 @@ export interface GetPostsData {
   page_size: number;
 }
 
+// 帖子详情页面参数
+export interface PostDetailParam {
+  post_id: string
+  user_id?: number | string
+  title?: string
+  description?: string
+  like_count?: number
+  create_time?: string
+  image_urls?: string[]
+}
+
 export const submitImage = async (
   param: CreatePostParams
 ): Promise<ApiResponse<SubmitImageData>> => {

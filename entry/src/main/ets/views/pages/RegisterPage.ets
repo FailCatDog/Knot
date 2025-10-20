@@ -17,7 +17,7 @@ export struct RegisterPage {
   @State email: string = ''
   @State password: string = ''
   @State confirmPassword: string = ''
-  @State testResult: string = ''
+  // @State testResult: string = ''  // 已删除 - 测试功能不再需要
 
   @Link currentPage: AuthPageType
 
@@ -151,27 +151,28 @@ export struct RegisterPage {
       }
       .margin({ top: 10 })
 
-      Column() {
-        Button('测试注册端点')
-          .width('80%')
-          .height(40)
-          .backgroundColor('#007DFF')
-          .fontColor('#FFFFFF')
-          .borderRadius(8)
-          .margin({ top: 20 })
-          .onClick(() => {
-            this.testRegisterEndpoint()
-          })
-
-        if (this.testResult !== '') {
-          Text(this.testResult)
-            .fontSize(14)
-            .fontColor(this.testResult.includes('成功') || this.testResult.includes('正常') ? '#00FF00' : '#FF0000')
-            .margin({ top: 10 })
-        }
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Center)
+      // 测试按钮已删除 - 不再需要
+      // Column() {
+      //   Button('测试注册端点')
+      //     .width('80%')
+      //     .height(40)
+      //     .backgroundColor('#007DFF')
+      //     .fontColor('#FFFFFF')
+      //     .borderRadius(8)
+      //     .margin({ top: 20 })
+      //     .onClick(() => {
+      //       this.testRegisterEndpoint()
+      //     })
+      //
+      //   if (this.testResult !== '') {
+      //     Text(this.testResult)
+      //       .fontSize(14)
+      //       .fontColor(this.testResult.includes('成功') || this.testResult.includes('正常') ? '#00FF00' : '#FF0000')
+      //       .margin({ top: 10 })
+      //   }
+      // }
+      // .width('100%')
+      // .alignItems(HorizontalAlign.Center)
 
       Blank()
     }
@@ -181,47 +182,48 @@ export struct RegisterPage {
     .padding({ left: 20, right: 20 })
   }
 
-  private async testRegisterEndpoint() {
-    this.testResult = '测试中...';
-
-    try {
-      let httpRequestTest: http.HttpRequest = http.createHttp();
-
-      const response: http.HttpResponse = await httpRequestTest.request(
-        'http://8.138.115.164:8080/api/v1/auth/register',
-        {
-          method: http.RequestMethod.POST,
-          header: { 'Content-Type': 'application/json' },
-          extraData: JSON.stringify({
-            username: 'testuser',
-            password: 'password123',
-            real_name: '测试用户',
-            phone: '13800138888',
-            email: 'test@example.com',
-            role: 'driver'
-          }),
-          connectTimeout: 10000,
-          readTimeout: 10000
-        }
-      );
-
-      if (response.responseCode === 200) {
-        const result = JSON.parse(response.result as string) as RegisterApiResponse;
-        if (result.success) {
-          this.testResult = '注册端点访问成功！';
-        } else {
-          this.testResult = `注册端点访问成功，但注册失败: ${result.message}`;
-        }
-      } else if (response.responseCode === 400) {
-        this.testResult = '注册端点访问成功，但参数验证失败（这是正常的）';
-      } else {
-        this.testResult = `注册端点访问失败，状态码: ${response.responseCode}`;
-      }
-
-      httpRequestTest.destroy();
-    } catch (error) {
-      this.testResult = `注册端点测试失败: ${(error as Error).message}`;
-      console.error('注册端点测试错误:', (error as Error).message);
-    }
-  }
+  // 测试方法已注释 - 不再需要
+  // private async testRegisterEndpoint() {
+  //   this.testResult = '测试中...';
+  //
+  //   try {
+  //     let httpRequestTest: http.HttpRequest = http.createHttp();
+  //
+  //     const response: http.HttpResponse = await httpRequestTest.request(
+  //       'http://8.138.115.164:8080/api/v1/auth/register',
+  //       {
+  //         method: http.RequestMethod.POST,
+  //         header: { 'Content-Type': 'application/json' },
+  //         extraData: JSON.stringify({
+  //           username: 'testuser',
+  //           password: 'password123',
+  //           real_name: '测试用户',
+  //           phone: '13800138888',
+  //           email: 'test@example.com',
+  //           role: 'driver'
+  //         }),
+  //         connectTimeout: 10000,
+  //         readTimeout: 10000
+  //       }
+  //     );
+  //
+  //     if (response.responseCode === 200) {
+  //       const result = JSON.parse(response.result as string) as RegisterApiResponse;
+  //       if (result.success) {
+  //         this.testResult = '注册端点访问成功！';
+  //       } else {
+  //         this.testResult = `注册端点访问成功，但注册失败: ${result.message}`;
+  //       }
+  //     } else if (response.responseCode === 400) {
+  //       this.testResult = '注册端点访问成功，但参数验证失败（这是正常的）';
+  //     } else {
+  //       this.testResult = `注册端点访问失败，状态码: ${response.responseCode}`;
+  //     }
+  //
+  //     httpRequestTest.destroy();
+  //   } catch (error) {
+  //     this.testResult = `注册端点测试失败: ${(error as Error).message}`;
+  //     console.error('注册端点测试错误:', (error as Error).message);
+  //   }
+  // }
 }

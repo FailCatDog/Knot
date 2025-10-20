@@ -24,6 +24,16 @@
       "name": "ChangePasswordPage",
       "pageSourceFile": "src/main/ets/views/pages/ChangePasswordPage.ets",
       "buildFunction": "ChangePasswordPageBuilder"
+    },
+    {
+      "name": "UserProfilePage",
+      "pageSourceFile": "src/main/ets/views/pages/UserProfilePage.ets",
+      "buildFunction": "UserProfilePageBuilder"
+    },
+    {
+      "name": "FavoritesPage",
+      "pageSourceFile": "src/main/ets/views/pages/FavoritesPage.ets",
+      "buildFunction": "FavoritesPageBuilder"
     }
   ]
 }
