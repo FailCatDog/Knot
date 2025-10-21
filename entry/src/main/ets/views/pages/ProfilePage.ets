@@ -1,6 +1,5 @@
 import { ImageCard, ImageItem } from '../components/ImageCard'
 import { UserInfo } from '../../services/api/UserApi'
-import { common } from '@kit.AbilityKit'
 import { LoginPage } from './LoginPage'
 import { RegisterPage } from './RegisterPage'
 import { ProfileViewModel } from '../../viewmodels/ProfileViewModel'
@@ -13,23 +12,10 @@ export enum AuthPageType {
   REGISTER = 1
 }
 
-interface UserLoginStatusChangedData {
-  isLoggedIn: boolean;
-  userInfo: UserInfo;
-}
-
-interface UserLogoutStatusChangedData {
-  isLoggedIn: boolean;
-}
-
 interface PostDetailNavParam {
   post_id: string
-  user_id?: number | string
-  title?: string
-  description?: string
-  like_count?: number
-  create_time?: string
-  image_urls?: string[]
+  user_avatar?: string
+  user_name?: string
 }
 
 
@@ -48,85 +34,94 @@ export struct ProfilePage {
   // 收藏点赞状态
   @State likeLikedItems: Set<string> = new Set()
   @State likeLikeCounts: Map<string, number> = new Map()
-
-  aboutToAppear(): void {
-    // 使用ViewModel检查登录状态
-    this.viewModel.checkUserLoginStatus().then(() => {
-      this.initializeLikeStates()
-    })
-
-    try {
-      let context = getContext(this) as common.UIAbilityContext
-      let eventHub = context.eventHub
+  
+  // 标志位：是否已完成初始化检查
+  private hasInitialized: boolean = false
+  
+  // 监听全局登录状态（通过 AppStorage 实现跨页面状态同步）
+  @StorageLink('logoutTimestamp') @Watch('onLogoutTimestampChange') logoutTimestamp: number = 0
+  @StorageLink('loginTimestamp') @Watch('onLoginTimestampChange') loginTimestamp: number = 0
+  
+  // 监听登录状态变化
+  onLoginTimestampChange() {
+    if (this.loginTimestamp > 0) {
+      console.log('[ProfilePage] 检测到登录成功，重新加载用户数据')
       
-      eventHub.on('userLoginStatusChanged', (data: UserLoginStatusChangedData) => {
-        if (data.userInfo) {
-          this.viewModel.updateUserInfo(data.userInfo)
-          // 延迟初始化点赞状态，等待数据加载
-          setTimeout(() => {
+      this.viewModel.checkUserLoginStatus().then(() => {
+        if (this.viewModel.isUserLoggedIn) {
+          this.viewModel.loadUserPosts(true)
+          this.viewModel.loadUserFavorites(true).then(() => {
             this.initializeLikeStates()
-          }, 500)
+          })
         }
-        this.showAuthView = false
       })
+    }
+  }
+  
+  // 监听退出登录状态变化
+  onLogoutTimestampChange() {
+    if (this.logoutTimestamp > 0) {
+      console.log('[ProfilePage] 检测到退出登录，重置为未登录状态')
       
-      eventHub.on('userLogoutStatusChanged', (data: UserLogoutStatusChangedData) => {
-        this.viewModel.logout()
-        this.showAuthView = false
-      })
-    } catch (error) {
-      console.error('[ProfilePage] 监听事件失败:', error)
+      // 清空页面状态
+      this.workLikedItems = new Set()
+      this.workLikeCounts = new Map()
+      this.likeLikedItems = new Set()
+      this.likeLikeCounts = new Map()
+      this.showAuthView = false
+      
+      // 创建全新的 ViewModel 实例
+      this.viewModel = new ProfileViewModel()
     }
   }
 
+  aboutToAppear(): void {
+    console.log('[ProfilePage] aboutToAppear - 初始化')
+    
+    // 只在第一次初始化时检查登录状态
+    if (!this.hasInitialized) {
+      this.hasInitialized = true
+      this.viewModel.checkUserLoginStatus().then(() => {
+        this.initializeLikeStates()
+      }).catch(() => {
+        console.error('[ProfilePage] 检查登录状态失败')
+      })
+    } else {
+      this.initializeLikeStates()
+    }
+  }
+  
+  // aboutToDisappear 不再需要，AppStorage 会自动管理状态
+
   // 初始化点赞状态
   initializeLikeStates(): void {
-    console.log('[ProfilePage] 初始化点赞状态 - 作品数量:', this.viewModel.workItems.length, '收藏数量:', this.viewModel.likeItems.length)
+    // 先清空所有旧状态
+    this.workLikedItems.clear()
+    this.workLikeCounts.clear()
+    this.likeLikedItems.clear()
+    this.likeLikeCounts.clear()
     
     // 初始化作品点赞状态
     this.viewModel.workItems.forEach(item => {
-      if (!this.workLikeCounts.has(item.id)) {
-        this.workLikeCounts.set(item.id, item.likeCount)
-      }
-      if (item.isLiked && !this.workLikedItems.has(item.id)) {
+      this.workLikeCounts.set(item.id, item.likeCount)
+      if (item.isLiked) {
         this.workLikedItems.add(item.id)
-        console.log('[ProfilePage] 作品已点赞:', item.id, '点赞数:', item.likeCount)
       }
     })
     
     // 初始化收藏点赞状态
     this.viewModel.likeItems.forEach(item => {
-      console.log('[ProfilePage] 处理收藏帖子:', item.id, 'isLiked:', item.isLiked, 'likeCount:', item.likeCount)
-      
-      if (!this.likeLikeCounts.has(item.id)) {
-        this.likeLikeCounts.set(item.id, item.likeCount)
-      }
-      if (item.isLiked && !this.likeLikedItems.has(item.id)) {
+      this.likeLikeCounts.set(item.id, item.likeCount)
+      if (item.isLiked) {
         this.likeLikedItems.add(item.id)
-        console.log('[ProfilePage] ✅ 添加到likeLikedItems:', item.id)
-      } else if (!item.isLiked) {
-        console.log('[ProfilePage] ❌ 未点赞，不添加:', item.id)
       }
     })
     
-    // 触发UI更新（作品和收藏都需要）
+    // 触发UI更新
     this.workLikedItems = new Set(this.workLikedItems)
     this.workLikeCounts = new Map(this.workLikeCounts)
     this.likeLikedItems = new Set(this.likeLikedItems)
     this.likeLikeCounts = new Map(this.likeLikeCounts)
-    
-    console.log('[ProfilePage] 点赞状态初始化完成 - 作品点赞:', this.workLikedItems.size, '收藏点赞:', this.likeLikedItems.size)
-  }
-
-  aboutToDisappear(): void {
-    try {
-      let context = getContext(this) as common.UIAbilityContext
-      let eventHub = context.eventHub
-      eventHub.off('userLoginStatusChanged')
-      eventHub.off('userLogoutStatusChanged')
-    } catch (error) {
-      console.error('[ProfilePage] 取消监听事件失败:', error)
-    }
   }
 
   @Builder
@@ -418,40 +413,28 @@ export struct ProfilePage {
     .alignItems(HorizontalAlign.Center)
   }
 
-  // 将时间戳转换为日期字符串
-  private formatTimestamp(timestamp: number): string {
-    const date = new Date(timestamp * 1000) // 转换为毫秒
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    const seconds = String(date.getSeconds()).padStart(2, '0')
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-  }
-
   // 处理作品卡片点击
   handleWorkCardClick(id: string): void {
-    const param: PostDetailNavParam = { post_id: id }
+    const item = this.viewModel.workItems.find(item => item.id === id)
+    const userAvatar = typeof item?.userAvatar === 'string' ? item.userAvatar : undefined
+    const param: PostDetailNavParam = { 
+      post_id: id,
+      user_avatar: userAvatar,
+      user_name: item?.userId
+    }
     this.pathStack.pushPathByName('PostDetailPage', param, false)
   }
 
   // 处理收藏卡片点击
   handleLikeCardClick(id: string): void {
-    const post = this.viewModel.likePosts.find(p => p.post_id === id)
-    if (post) {
-      const imageUrls = post.images ? post.images.map(img => img.file_url) : []
-      const postData: PostDetailNavParam = {
-        post_id: post.post_id,
-        user_id: post.user_id,
-        title: post.title,
-        description: post.description || '',
-        like_count: post.like_count,
-        create_time: this.formatTimestamp(post.create_time),
-        image_urls: imageUrls
-      }
-      this.pathStack.pushPathByName('PostDetailPage', postData, false)
+    const item = this.viewModel.likeItems.find(item => item.id === id)
+    const userAvatar = typeof item?.userAvatar === 'string' ? item.userAvatar : undefined
+    const param: PostDetailNavParam = {
+      post_id: id,
+      user_avatar: userAvatar,
+      user_name: item?.userId
     }
+    this.pathStack.pushPathByName('PostDetailPage', param, false)
   }
 
   // 处理作品点赞
