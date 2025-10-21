@@ -6,6 +6,8 @@ import { LoadingComponent } from '../components/LoadingComponent'
 
 interface PostDetailNavParam {
   post_id: string
+  user_avatar?: string
+  user_name?: string
 }
 
 
@@ -223,7 +225,13 @@ export struct DiscoverPage {
   }
 
   handleCardClick(id: string): void {
-    const param: PostDetailNavParam = { post_id: id }
+    const item = this.imageList.find(item => item.id === id)
+    const userAvatar = typeof item?.userAvatar === 'string' ? item.userAvatar : undefined
+    const param: PostDetailNavParam = {
+      post_id: id,
+      user_avatar: userAvatar,
+      user_name: item?.userId
+    }
     this.navPathStack.pushPathByName('PostDetailPage', param, false)
   }
 }

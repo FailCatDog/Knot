@@ -49,9 +49,7 @@ class HttpRequest {
   }
 
   private isNoAuthPath(url: string): boolean {
-    // 特殊处理：GET /users/{user_id} 公开API不需要认证
-    // 匹配模式：/users/ 后面跟着 USR_ 开头的ID（不是 /users/info 或 /users/profile 等需要认证的API）
-    if (url.includes('/users/') && url.match(/\/users\/USR_[A-Z0-9_]+/)) {
+    if (url.includes('/users/') && url.match(/\/users\/USR_[A-Z0-9_]+$/)) {
       return true;
     }
     return this.noAuthPaths.some(path => url.includes(path));
