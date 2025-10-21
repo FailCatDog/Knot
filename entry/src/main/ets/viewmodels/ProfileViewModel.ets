@@ -25,7 +25,7 @@ export class ProfileViewModel {
     update_time: 0,
     device_count: 0
   }
-  isLoading: boolean = true
+  isLoading: boolean = false
 
   // 作品相关状态
   workLikedItems: Set<string> = new Set()
@@ -52,17 +52,24 @@ export class ProfileViewModel {
 
   // 检查用户登录状态
   async checkUserLoginStatus(): Promise<void> {
+    console.log('[ProfileViewModel] ========== 开始检查用户登录状态 ==========')
+    console.log('[ProfileViewModel] 检查前状态 - isUserLoggedIn:', this.isUserLoggedIn, 'isLoading:', this.isLoading)
     this.isLoading = true
 
     try {
       const tokenManager = TokenManager.getInstance()
       const token = await tokenManager.getToken()
+      console.log('[ProfileViewModel] Token 状态:', token ? '存在' : '不存在')
 
       if (token) {
+        console.log('[ProfileViewModel] 调用 getCurrentUserInfo...')
         const response = await getCurrentUserInfo()
+        console.log('[ProfileViewModel] API 响应:', response.success ? '成功' : '失败')
+        
         if (response.success && response.data) {
           this.userInfo = response.data
           this.isUserLoggedIn = true
+          console.log('[ProfileViewModel] 用户已登录，用户名:', this.userInfo.username)
           
           // 登录后加载用户作品和收藏
           if (this.userInfo.id > 0) {
@@ -70,10 +77,12 @@ export class ProfileViewModel {
             await this.loadUserFavorites(true)
           }
         } else {
+          console.log('[ProfileViewModel] 获取用户信息失败，清除 token')
           await tokenManager.clearToken()
           this.isUserLoggedIn = false
         }
       } else {
+        console.log('[ProfileViewModel] 未找到 token，设置为未登录')
         this.isUserLoggedIn = false
       }
     } catch (error) {
@@ -81,6 +90,8 @@ export class ProfileViewModel {
       this.isUserLoggedIn = false
     } finally {
       this.isLoading = false
+      console.log('[ProfileViewModel] 检查完成 - isUserLoggedIn:', this.isUserLoggedIn, 'isLoading:', this.isLoading)
+      console.log('[ProfileViewModel] ========== 检查用户登录状态结束 ==========')
     }
   }
 
@@ -101,6 +112,7 @@ export class ProfileViewModel {
     await tokenManager.clearToken()
     
     this.isUserLoggedIn = false
+    this.isLoading = false  // 确保退出后不显示加载状态
     this.userInfo = {
       id: 0,
       user_id: '',
@@ -118,11 +130,27 @@ export class ProfileViewModel {
       update_time: 0,
       device_count: 0
     }
+    
+    // 清空作品相关数据
     this.workItems = []
     this.workPosts = []
     this.workPage = 1
     this.workTotalCount = 0
     this.workHasMore = true
+    this.workLikedItems.clear()
+    this.workLikeCounts.clear()
+    
+    // 清空收藏相关数据
+    this.likeItems = []
+    this.likePosts = []
+    this.likePage = 1
+    this.likeTotalCount = 0
+    this.likeHasMore = true
+    this.likeLikedItems.clear()
+    this.likeLikeCounts.clear()
+    
+    // 清空用户信息缓存
+    this.userInfoCache.clear()
   }
 
   // 将Post转换为ImageItem
@@ -148,13 +176,19 @@ export class ProfileViewModel {
       }
     }
     
+    // 优先使用帖子中的作者信息，否则使用当前用户信息（仅作品）或默认值（收藏）
+    const userAvatar = post.author?.avatar_url || post.avatar_url || 
+      (isCurrentUser ? this.userInfo.avatar_url : '') || $r('app.media.head')
+    const userName = post.author?.username || post.username || 
+      (isCurrentUser ? this.userInfo.username : `用户${post.user_id}`)
+    
     return {
       id: post.post_id,
       imageUrl: imageUrl,
       title: post.title,
       description: post.description,
-      userAvatar: isCurrentUser ? (this.userInfo.avatar_url || $r('app.media.head')) : $r('app.media.head'),
-      userId: isCurrentUser ? this.userInfo.username : `用户${post.user_id}`,
+      userAvatar: userAvatar,
+      userId: userName,
       likeCount: likeCount,
       isLiked: isLiked,
       imageHeight: 200

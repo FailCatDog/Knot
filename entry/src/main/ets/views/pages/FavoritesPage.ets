@@ -15,6 +15,7 @@ export struct FavoritesPage {
   @State favoriteItems: ImageItem[] = []
 
   aboutToAppear(): void {
+    // 每次页面显示时重新加载收藏（确保数据最新）
     this.loadFavorites(true)
   }
 
@@ -40,42 +41,24 @@ export struct FavoritesPage {
       imageUrl: imageUrl,
       title: post.title,
       description: post.description,
-      userAvatar: $r('app.media.head'),
-      userId: `用户${post.user_id}`,
+      userAvatar: post.author?.avatar_url || post.avatar_url || $r('app.media.head'),
+      userId: post.author?.username || post.username || `用户${post.user_id}`,
       likeCount: post.like_count,
       isLiked: false,
       imageHeight: 200
     }
   }
 
-  // 将时间戳转换为日期字符串
-  private formatTimestamp(timestamp: number): string {
-    const date = new Date(timestamp * 1000)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    const seconds = String(date.getSeconds()).padStart(2, '0')
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-  }
-
   // 处理卡片点击
   handleCardClick(id: string): void {
-    const post = this.viewModel.favorites.find(p => p.post_id === id)
-    if (post) {
-      const imageUrls = post.images ? post.images.map(img => img.file_url) : []
-      const postData: PostDetailParam = {
-        post_id: post.post_id,
-        user_id: post.user_id,
-        title: post.title,
-        description: post.description || '',
-        like_count: post.like_count,
-        create_time: this.formatTimestamp(post.create_time),
-        image_urls: imageUrls
-      }
-      this.pathStack.pushPathByName('PostDetailPage', postData, false)
+    const item = this.favoriteItems.find(item => item.id === id)
+    const userAvatar = typeof item?.userAvatar === 'string' ? item.userAvatar : undefined
+    const param: PostDetailParam = {
+      post_id: id,
+      user_avatar: userAvatar,
+      user_name: item?.userId
     }
+    this.pathStack.pushPathByName('PostDetailPage', param, false)
   }
 
   build() {

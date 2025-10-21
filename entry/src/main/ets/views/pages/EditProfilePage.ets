@@ -1,5 +1,4 @@
 import { EditProfileViewModel } from '../../viewmodels/EditProfileViewModel'
-import { common } from '@kit.AbilityKit'
 import { ToastUtil } from '../../common/utils/ToastUtil'
 
 @Builder
@@ -13,8 +12,7 @@ export struct EditProfilePage {
   @State viewModel: EditProfileViewModel = new EditProfileViewModel()
 
   async aboutToAppear() {
-    console.log('[EditProfilePage] aboutToAppear - 重新加载用户信息')
-    // 创建新的ViewModel实例，避免缓存问题
+    // 创建新的ViewModel实例并加载用户信息
     this.viewModel = new EditProfileViewModel()
     const result = await this.viewModel.loadUserInfo()
     if (!result.success) {
@@ -295,16 +293,8 @@ export struct EditProfilePage {
     if (result.success && result.userInfo) {
       ToastUtil.getInstance().show(result.message);
       
-      try {
-        let context = getContext(this) as common.UIAbilityContext
-        let eventHub = context.eventHub
-        eventHub.emit('userLoginStatusChanged', {
-          isLoggedIn: true,
-          userInfo: result.userInfo
-        })
-      } catch (error) {
-        console.error('[EditProfilePage] 发送更新事件失败:', error)
-      }
+      // 更新全局登录状态（用户信息已更新，触发 ProfilePage 刷新）
+      AppStorage.set<number>('loginTimestamp', Date.now())
       
       this.pathStack.pop()
     } else if (this.viewModel.errorMessage) {
