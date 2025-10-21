@@ -6,6 +6,9 @@ import { PostStateManager } from '../common/utils/PostStateManager'
 import { LoadingComponent } from '../views/components/LoadingComponent'
 import { followUser, getCurrentUserInfo, getFollowStatus } from '../services/api/UserApi'
 import { TokenManager } from '../services/TokenManager'
+import { CommentSection } from '../views/components/CommentSection'
+import { createComment, getComments, type CommentEntity } from '../services/api/CommentApi'
+import { PostShareCardPreview } from '../views/components/PostShareCardPreview'
 
 interface UserProfileParam {
   user_id: string
@@ -26,9 +29,16 @@ struct PostDetailPage {
   @State isFollowing: boolean = false
   @State isOwnPost: boolean = false
   @State currentUserId: string = ''
+  @State commentText: string = ''
+  @State commentCount: number = 0
+  @State refreshTimestamp: number = 0
+  @State initialComments: CommentEntity[] = []
+  @State showShareCardPreview: boolean = false
   @Consume('NavPathStack') navPathStack: NavPathStack
   pathInfos: NavPathStack = new NavPathStack()
   private postId: string = ''
+  private passedUserAvatar: string = ''
+  private passedUserName: string = ''
 
   @Builder
   buildHeader() {
@@ -159,56 +169,23 @@ struct PostDetailPage {
             Text(this.postDetail.publishDate)
               .fontSize(14)
               .fontColor('#999999')
-
-            Blank()
-
-            Row({ space: 16 }) {
-              Row({ space: 4 }) {
-                Image(this.postDetail.isFavorited ? $r('app.media.ic_favorite_filled') : $r('app.media.ic_favorite_outline'))
-                  .width(20)
-                  .height(20)
-                  .fillColor(this.postDetail.isFavorited ? '#FFD700' : '#999999')
-                  .animation({
-                    duration: 200,
-                    curve: Curve.EaseInOut
-                  })
-                  .onClick(() => {
-                    this.handleCollect()
-                  })
-
-                Text(this.postDetail.favoriteCount.toString())
-                  .fontSize(14)
-                  .fontColor('#666666')
-                  .animation({
-                    duration: 200,
-                    curve: Curve.EaseInOut
-                  })
-              }
-
-              Row({ space: 4 }) {
-                Image(this.postDetail.isLiked ? $r('app.media.ic_heart_filled') : $r('app.media.ic_heart_outline'))
-                  .width(20)
-                  .height(20)
-                  .fillColor(this.postDetail.isLiked ? '#FF4757' : '#999999')
-                  .animation({
-                    duration: 200,
-                    curve: Curve.EaseInOut
-                  })
-                  .onClick(() => {
-                    this.handleLike()
-                  })
-
-                Text(this.postDetail.likeCount.toString())
-                  .fontSize(14)
-                  .fontColor('#666666')
-                  .animation({
-                    duration: 200,
-                    curve: Curve.EaseInOut
-                  })
-              }
-            }
           }
           .width('100%')
+          .margin({ bottom: 8 })
+
+          Divider()
+            .color('#F0F0F0')
+            .strokeWidth(8)
+            .margin({ top: 16 })
+
+          CommentSection({
+            postId: this.postDetail.postId,
+            refreshTimestamp: this.refreshTimestamp,
+            initialComments: this.initialComments,
+            onCommentCountChange: (count: number) => {
+              this.commentCount = count
+            }
+          })
         }
         .width('100%')
         .padding({ left: 8, right: 8, top: 12, bottom: 12 })
@@ -216,7 +193,7 @@ struct PostDetailPage {
       }
       .layoutWeight(1)
       .scrollBar(BarState.Off)
-      .padding(0)
+      .padding({ bottom: 64 })
       .margin(0)
       .width('100%')
       .backgroundColor('#FFFFFF')
@@ -290,10 +267,17 @@ struct PostDetailPage {
 
   handleRepost(): void {
     this.showShareDrawer = false
+    this.generateShareCard()
   }
 
   handleMessage(): void {
     this.showShareDrawer = false
+  }
+
+  async generateShareCard() {
+    if (!this.postDetail) return
+
+    this.showShareCardPreview = true
   }
 
   async handleCollect(): Promise<void> {
@@ -368,6 +352,42 @@ struct PostDetailPage {
     }
   }
 
+  @Builder
+  buildShareCardPreviewDialog() {
+    if (this.postDetail) {
+      Stack() {
+        Column()
+          .width('100%')
+          .height('100%')
+          .backgroundColor('#CC000000')
+          .onClick(() => {
+            this.showShareCardPreview = false
+          })
+
+        Column() {
+          PostShareCardPreview({
+            postTitle: this.postDetail.title,
+            postDescription: this.postDetail.description,
+            coverImage: this.postDetail.imageUrls && this.postDetail.imageUrls.length > 0 ? 
+              this.postDetail.imageUrls[0] : '',
+            userName: this.postDetail.userName,
+            userAvatar: this.postDetail.userAvatar,
+            likeCount: this.postDetail.likeCount,
+            favoriteCount: this.postDetail.favoriteCount
+          })
+
+          Text('长按保存图片')
+            .fontSize(14)
+            .fontColor('#FFFFFF')
+            .margin({ top: 20 })
+        }
+      }
+      .width('100%')
+      .height('100%')
+      .transition(TransitionEffect.OPACITY.animation({ duration: 300, curve: Curve.EaseInOut }))
+    }
+  }
+
   async loadPostData(): Promise<void> {
     if (!this.postId) return
 
@@ -388,25 +408,30 @@ struct PostDetailPage {
 
       const favoritePromise = getFavoriteStatus(this.postId)
       const likePromise = getLikeStatus(this.postId)
+      const commentsPromise = getComments(this.postId, 1, 20)
       
       if (!this.isOwnPost) {
         const followPromise = getFollowStatus(postUserId)
-        const results = await Promise.all([favoritePromise, likePromise, followPromise])
+        const results = await Promise.all([favoritePromise, likePromise, commentsPromise, followPromise])
         const favoriteResponse = results[0]
         const likeResponse = results[1]
-        const followResponse = results[2]
+        const commentsResponse = results[2]
+        const followResponse = results[3]
         
         const imageUrls = post.images ? post.images.map(img => img.file_url) : []
         const publishDate = this.formatTimestamp(post.create_time)
+
+        const userAvatar = this.passedUserAvatar || post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/60/60'
+        const userName = this.passedUserName || post.author?.username || post.username || `用户${postUserId}`
 
         this.postDetail = {
           postId: post.post_id,
           imageUrls: imageUrls,
           title: post.title,
           description: post.description || '',
-          userAvatar: post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/60/60',
+          userAvatar: userAvatar,
           userId: postUserId,
-          userName: post.author?.username || post.username || `用户${postUserId}`,
+          userName: userName,
           publishDate: publishDate,
           likeCount: post.like_count,
           isLiked: likeResponse.success && likeResponse.data ? likeResponse.data.has_liked : false,
@@ -417,27 +442,40 @@ struct PostDetailPage {
         if (followResponse.success && followResponse.data) {
           this.isFollowing = followResponse.data.is_following
         }
+
+        if (commentsResponse.success && commentsResponse.data) {
+          this.initialComments = commentsResponse.data.comments
+          this.commentCount = commentsResponse.data.total
+        }
       } else {
-        const results = await Promise.all([favoritePromise, likePromise])
+        const results = await Promise.all([favoritePromise, likePromise, commentsPromise])
         const favoriteResponse = results[0]
         const likeResponse = results[1]
+        const commentsResponse = results[2]
         
         const imageUrls = post.images ? post.images.map(img => img.file_url) : []
         const publishDate = this.formatTimestamp(post.create_time)
+        const userAvatar = this.passedUserAvatar || post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/60/60'
+        const userName = this.passedUserName || post.author?.username || post.username || `用户${postUserId}`
 
         this.postDetail = {
           postId: post.post_id,
           imageUrls: imageUrls,
           title: post.title,
           description: post.description || '',
-          userAvatar: post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/60/60',
+          userAvatar: userAvatar,
           userId: postUserId,
-          userName: post.author?.username || post.username || `用户${postUserId}`,
+          userName: userName,
           publishDate: publishDate,
           likeCount: post.like_count,
           isLiked: likeResponse.success && likeResponse.data ? likeResponse.data.has_liked : false,
           favoriteCount: post.favorite_count,
           isFavorited: favoriteResponse.success && favoriteResponse.data ? favoriteResponse.data.has_favorited : false
+        }
+
+        if (commentsResponse.success && commentsResponse.data) {
+          this.initialComments = commentsResponse.data.comments
+          this.commentCount = commentsResponse.data.total
         }
       }
     } else {
@@ -455,6 +493,86 @@ struct PostDetailPage {
     return `${year}-${month}-${day}`
   }
 
+  async handleSendComment(): Promise<void> {
+    if (!this.commentText.trim() || !this.postId) return
+
+    const content = this.commentText.trim()
+    const response = await createComment(this.postId, content)
+
+    if (response.success) {
+      this.commentText = ''
+      ToastUtil.getInstance().show('评论成功')
+      this.refreshTimestamp = Date.now()
+    } else {
+      ToastUtil.getInstance().show(response.message || '评论失败')
+    }
+  }
+
+  @Builder
+  buildBottomBar() {
+    Row({ space: 12 }) {
+      TextInput({ placeholder: '说点什么...', text: this.commentText })
+        .layoutWeight(1)
+        .height(40)
+        .fontSize(14)
+        .backgroundColor('#F5F5F5')
+        .borderRadius(20)
+        .padding({ left: 16, right: 16 })
+        .onChange((value: string) => {
+          this.commentText = value
+        })
+
+      Button('发送')
+        .fontSize(14)
+        .fontColor('#FFFFFF')
+        .backgroundColor('#ffdd0223')
+        .height(40)
+        .padding({ left: 16, right: 16 })
+        .borderRadius(20)
+        .enabled(this.commentText.trim().length > 0)
+        .opacity(this.commentText.trim().length > 0 ? 1 : 0.5)
+        .onClick(() => {
+          this.handleSendComment()
+        })
+
+      Row({ space: 4 }) {
+        Image(this.postDetail?.isLiked ? $r('app.media.ic_heart_filled') : $r('app.media.ic_heart_outline'))
+          .width(24)
+          .height(24)
+          .fillColor(this.postDetail?.isLiked ? '#FF4757' : '#666666')
+
+        if (this.postDetail && this.postDetail.likeCount > 0) {
+          Text(this.postDetail.likeCount.toString())
+            .fontSize(12)
+            .fontColor('#666666')
+        }
+      }
+      .onClick(() => {
+        this.handleLike()
+      })
+
+      Row({ space: 4 }) {
+        Image(this.postDetail?.isFavorited ? $r('app.media.ic_favorite_filled') : $r('app.media.ic_favorite_outline'))
+          .width(24)
+          .height(24)
+          .fillColor(this.postDetail?.isFavorited ? '#FFD700' : '#666666')
+
+        if (this.postDetail && this.postDetail.favoriteCount > 0) {
+          Text(this.postDetail.favoriteCount.toString())
+            .fontSize(12)
+            .fontColor('#666666')
+        }
+      }
+      .onClick(() => {
+        this.handleCollect()
+      })
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+    .backgroundColor('#FFFFFF')
+    .shadow({ radius: 8, color: '#1F000000', offsetY: -2 })
+  }
+
   build() {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
@@ -465,6 +583,10 @@ struct PostDetailPage {
         .width('100%')
         .height('100%')
         .backgroundColor('#F5F5F5')
+
+        if (!this.isLoading && this.postDetail) {
+          this.buildBottomBar()
+        }
 
         if (this.showShareDrawer) {
           ShareDrawer({
@@ -489,6 +611,10 @@ struct PostDetailPage {
         if (this.showImagePreview) {
           this.buildImagePreview()
         }
+
+        if (this.showShareCardPreview) {
+          this.buildShareCardPreviewDialog()
+        }
       }
       .width('100%')
       .height('100%')
@@ -498,6 +624,8 @@ struct PostDetailPage {
       this.pathInfos = context.pathStack
       const param = context.pathInfo.param as Record<string, Object>
       this.postId = param.post_id as string
+      this.passedUserAvatar = param.user_avatar as string || ''
+      this.passedUserName = param.user_name as string || ''
       if (this.postId) {
         this.loadPostData()
       }

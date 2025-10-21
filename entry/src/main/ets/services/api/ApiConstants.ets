@@ -42,6 +42,12 @@ interface UserEndpoints {
   UPLOAD_AVATAR: string;
 }
 
+interface CommentEndpoints {
+  CREATE_COMMENT: string;
+  GET_COMMENTS: string;
+  DELETE_COMMENT: string;
+}
+
 export class ApiConstants {
   static readonly BASE_URL = 'http://43.142.157.145:8080/api/v1';
   static readonly TIMEOUT = 10000;
@@ -75,6 +81,12 @@ export class ApiConstants {
     GET_MY_FAVORITES: '/my/favorites',
     GET_USER_PUBLIC_INFO: '/users/{user_id}',
     UPLOAD_AVATAR: '/users/avatar'
+  };
+
+  static readonly COMMENT_ENDPOINTS: CommentEndpoints = {
+    CREATE_COMMENT: '/posts/{post_id}/comments',
+    GET_COMMENTS: '/posts/{post_id}/comments',
+    DELETE_COMMENT: '/posts/{post_id}/comments/{comment_id}'
   };
 
   static readonly HTTP_STATUS: HttpStatus = {
