@@ -48,19 +48,15 @@ export class EditProfileViewModel {
         this.avatarUrl = userInfo.avatar_url || ''
         
         this.isLoading = false
-        
         return { success: true, message: '加载成功' }
       } else {
         this.errorMessage = response.message || '获取用户信息失败'
         this.isLoading = false
-        
         return { success: false, message: response.message || '获取用户信息失败' }
       }
     } catch (error) {
-      console.error('[EditProfileViewModel] 加载用户信息失败:', error)
       this.errorMessage = '网络请求失败'
       this.isLoading = false
-      
       return { success: false, message: '网络请求失败' }
     }
   }

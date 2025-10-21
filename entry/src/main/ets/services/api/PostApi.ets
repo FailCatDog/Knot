@@ -69,12 +69,8 @@ export interface GetPostsData {
 // 帖子详情页面参数
 export interface PostDetailParam {
   post_id: string
-  user_id?: number | string
-  title?: string
-  description?: string
-  like_count?: number
-  create_time?: string
-  image_urls?: string[]
+  user_avatar?: string
+  user_name?: string
 }
 
 export const submitImage = async (

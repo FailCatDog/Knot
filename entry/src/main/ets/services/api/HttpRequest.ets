@@ -65,16 +65,14 @@ class HttpRequest {
       const tokenManager = TokenManager.getInstance();
       await tokenManager.checkAndClearExpiredToken();
 
-      let token = this.authToken;
-      if (!token) {
-        const savedToken = await tokenManager.getToken();
-        if (savedToken) {
-          token = savedToken;
-          this.authToken = token;
-        }
-      }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      // 每次都从 TokenManager 获取最新的 token，避免缓存旧 token
+      const savedToken = await tokenManager.getToken();
+      if (savedToken && typeof savedToken === 'string') {
+        this.authToken = savedToken;
+        headers['Authorization'] = `Bearer ${savedToken}`;
+      } else {
+        // 如果没有 token，清空缓存
+        this.authToken = '';
       }
     }
 

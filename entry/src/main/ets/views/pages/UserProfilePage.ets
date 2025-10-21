@@ -122,47 +122,35 @@ export struct UserProfilePage {
     const isLiked: boolean = this.likedItems.has(post.post_id)
     const likeCount: number = this.likeCounts.get(post.post_id) || post.like_count
     
+    // 优先使用post中的作者信息，否则使用页面用户信息
+    const userAvatar = post.author?.avatar_url || post.avatar_url || 
+      this.userInfo?.avatar_url || $r('app.media.head')
+    const userName = post.author?.username || post.username || 
+      this.userInfo?.username || ''
+    
     return {
       id: post.post_id,
       imageUrl: imageUrl,
       title: post.title,
       description: post.description,
-      userAvatar: this.userInfo?.avatar_url || $r('app.media.head'),
-      userId: this.userInfo?.username || '',
+      userAvatar: userAvatar,
+      userId: userName,
       likeCount: likeCount,
       isLiked: isLiked,
       imageHeight: 200
     }
   }
 
-  // 将时间戳转换为日期字符串
-  private formatTimestamp(timestamp: number): string {
-    const date = new Date(timestamp * 1000)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    const seconds = String(date.getSeconds()).padStart(2, '0')
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-  }
-
   // 处理作品卡片点击
   handleCardClick(id: string): void {
-    const post = this.workPosts.find(p => p.post_id === id)
-    if (post) {
-      const imageUrls = post.images ? post.images.map(img => img.file_url) : []
-      const postData: PostDetailParam = {
-        post_id: post.post_id,
-        user_id: post.user_id,
-        title: post.title,
-        description: post.description || '',
-        like_count: post.like_count,
-        create_time: this.formatTimestamp(post.create_time),
-        image_urls: imageUrls
-      }
-      this.pathStack.pushPathByName('PostDetailPage', postData, false)
+    const item = this.workItems.find(item => item.id === id)
+    const userAvatar = typeof item?.userAvatar === 'string' ? item.userAvatar : undefined
+    const param: PostDetailParam = {
+      post_id: id,
+      user_avatar: userAvatar,
+      user_name: item?.userId
     }
+    this.pathStack.pushPathByName('PostDetailPage', param, false)
   }
 
   // 处理点赞

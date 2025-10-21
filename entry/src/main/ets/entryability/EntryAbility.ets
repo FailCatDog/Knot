@@ -17,12 +17,19 @@ export default class EntryAbility extends UIAbility {
   }
 
   async onWindowStageCreate(windowStage: window.WindowStage): Promise<void> {
-    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate START');
 
-    const tokenManager = TokenManager.getInstance();
-    await tokenManager.init(this.context);
-    hilog.info(DOMAIN, 'testTag', 'TokenManager initialized successfully');
+    try {
+      hilog.info(DOMAIN, 'testTag', 'Initializing TokenManager...');
+      const tokenManager = TokenManager.getInstance();
+      await tokenManager.init(this.context);
+      hilog.info(DOMAIN, 'testTag', 'TokenManager initialized successfully');
+    } catch (error) {
+      hilog.error(DOMAIN, 'testTag', 'Failed to initialize TokenManager: %{public}s', JSON.stringify(error));
+      return;
+    }
 
+    hilog.info(DOMAIN, 'testTag', 'Loading content: pages/SplashPage');
     windowStage.loadContent('pages/SplashPage', (err) => {
       if (err.code) {
         hilog.error(DOMAIN, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err));
@@ -31,6 +38,7 @@ export default class EntryAbility extends UIAbility {
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
       
       try {
+        hilog.info(DOMAIN, 'testTag', 'Initializing ToastUtil...');
         const mainWindow = windowStage.getMainWindowSync();
         const uiContext = mainWindow.getUIContext();
         const toastUtil = ToastUtil.getInstance();
@@ -40,6 +48,8 @@ export default class EntryAbility extends UIAbility {
         hilog.error(DOMAIN, 'testTag', 'Failed to initialize ToastUtil: %{public}s', JSON.stringify(error));
       }
     });
+    
+    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate END');
   }
 
   onWindowStageDestroy(): void {
