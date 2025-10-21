@@ -149,8 +149,20 @@ export struct FollowPage {
     Stack() {
       Column() {
         this.buildHeader()
-        this.buildFollowingUsers()
-        this.buildContent()
+        
+        if (this.isLoadingFollowing) {
+          Column() {
+            LoadingComponent()
+          }
+          .width('100%')
+          .layoutWeight(1)
+          .justifyContent(FlexAlign.Center)
+        } else if (this.followingUsers.length === 0) {
+          this.buildEmptyState()
+        } else {
+          this.buildFollowingUsers()
+          this.buildContent()
+        }
       }
       .width('100%')
       .height('100%')
@@ -283,87 +295,96 @@ export struct FollowPage {
   }
 
   @Builder
+  buildEmptyState() {
+    Column({ space: 16 }) {
+      Image($r('app.media.ic_follow'))
+        .width(120)
+        .height(120)
+        .fillColor('#D0D0D0')
+        .margin({ top: 100 })
+
+      Text('还没有关注任何人')
+        .fontSize(16)
+        .fontColor('#666666')
+
+      Text('去发现页寻找感兴趣的内容吧')
+        .fontSize(14)
+        .fontColor('#999999')
+    }
+    .width('100%')
+    .layoutWeight(1)
+    .justifyContent(FlexAlign.Center)
+  }
+
+  @Builder
   buildFollowingUsers() {
-    if (this.followingUsers.length > 0 || this.isLoadingFollowing) {
-      Column() {
+    Column() {
+      Row() {
+        Text('我的关注')
+          .fontSize(16)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#333333')
+
+        Blank()
+
         Row() {
-          Text('我的关注')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#333333')
-
-          Blank()
-
-          Row() {
-            Text('更多')
-              .fontSize(14)
-              .fontColor('#999999')
-              .margin({ right: 4 })
-            
-            Image($r('app.media.ic_more'))
-              .width(20)
-              .height(20)
-              .fillColor('#666666')
-          }
-          .onClick(() => {
-            this.showFollowingDialog = true
-          })
+          Text('更多')
+            .fontSize(14)
+            .fontColor('#999999')
+            .margin({ right: 4 })
+          
+          Image($r('app.media.ic_more'))
+            .width(20)
+            .height(20)
+            .fillColor('#666666')
         }
-        .width('100%')
-        .padding({ left: 16, right: 16, top: 12, bottom: 8 })
-
-        if (this.isLoadingFollowing) {
-          Row() {
-            Text('加载中...')
-              .fontSize(14)
-              .fontColor('#999999')
-          }
-          .width('100%')
-          .height(90)
-          .justifyContent(FlexAlign.Center)
-        } else {
-          Row({ space: 12 }) {
-            ForEach(this.followingUsers.slice(0, 6), (user: FollowingUser) => {
-              Column({ space: 6 }) {
-                Stack() {
-                  Image(user.userAvatar)
-                    .width(50)
-                    .height(50)
-                    .borderRadius(25)
-
-                  if (this.selectedUserId === user.userId) {
-                    Column()
-                      .width(50)
-                      .height(50)
-                      .borderRadius(25)
-                      .border({ width: 2, color: '#ffdd0223' })
-                  }
-                }
-
-                Text(user.userName)
-                  .fontSize(12)
-                  .fontColor(this.selectedUserId === user.userId ? '#ffdd0223' : '#666666')
-                  .fontWeight(this.selectedUserId === user.userId ? FontWeight.Bold : FontWeight.Normal)
-                  .maxLines(1)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis })
-              }
-              .width(60)
-              .onClick(() => {
-                this.handleUserClick(user.userId)
-              })
-            })
-          }
-          .width('100%')
-          .padding({ left: 16, right: 16 })
-          .height(90)
-          .justifyContent(FlexAlign.Start)
-        }
+        .onClick(() => {
+          this.showFollowingDialog = true
+        })
       }
       .width('100%')
-      .backgroundColor('#FFFFFF')
-      .borderRadius(12)
-      .margin({ left: 16, right: 16, top: 8, bottom: 12 })
+      .padding({ left: 16, right: 16, top: 12, bottom: 8 })
+
+      Row({ space: 12 }) {
+        ForEach(this.followingUsers.slice(0, 6), (user: FollowingUser) => {
+          Column({ space: 6 }) {
+            Stack() {
+              Image(user.userAvatar)
+                .width(50)
+                .height(50)
+                .borderRadius(25)
+
+              if (this.selectedUserId === user.userId) {
+                Column()
+                  .width(50)
+                  .height(50)
+                  .borderRadius(25)
+                  .border({ width: 2, color: '#ffdd0223' })
+              }
+            }
+
+            Text(user.userName)
+              .fontSize(12)
+              .fontColor(this.selectedUserId === user.userId ? '#ffdd0223' : '#666666')
+              .fontWeight(this.selectedUserId === user.userId ? FontWeight.Bold : FontWeight.Normal)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+          .width(60)
+          .onClick(() => {
+            this.handleUserClick(user.userId)
+          })
+        })
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16 })
+      .height(90)
+      .justifyContent(FlexAlign.Start)
     }
+    .width('100%')
+    .backgroundColor('#FFFFFF')
+    .borderRadius(12)
+    .margin({ left: 16, right: 16, top: 8, bottom: 12 })
   }
 
   @Builder
@@ -380,30 +401,36 @@ export struct FollowPage {
         WaterFlow() {
           ForEach(this.userPosts, (item: ImageItem, index: number) => {
             FlowItem() {
-              ImageCard({
-                item: {
-                  id: item.id,
-                  imageUrl: item.imageUrl,
-                  title: item.title,
-                  description: item.description || '分享生活中的美好瞬间，记录每一个值得纪念的时刻。',
-                  userAvatar: item.userAvatar,
-                  userId: item.userId,
-                  likeCount: this.getItemLikeCount(item.id),
-                  isLiked: this.isItemLiked(item.id),
-                  imageHeight: item.imageHeight
-                },
-                onLikeClick: (id: string) => {
-                  this.handleLikeClick(id)
-                },
-                onCardClick: (id: string) => {
-                  this.handleCardClick(id)
-                }
-              })
+              Column() {
+                ImageCard({
+                  item: {
+                    id: item.id,
+                    imageUrl: item.imageUrl,
+                    title: item.title,
+                    description: item.description || '分享生活中的美好瞬间，记录每一个值得纪念的时刻。',
+                    userAvatar: item.userAvatar,
+                    userId: item.userId,
+                    likeCount: this.getItemLikeCount(item.id),
+                    isLiked: this.isItemLiked(item.id),
+                    imageHeight: item.imageHeight
+                  },
+                  onLikeClick: (id: string) => {
+                    this.handleLikeClick(id)
+                  },
+                  onCardClick: (id: string) => {
+                    this.handleCardClick(id)
+                  }
+                })
+              }
+              .width('100%')
+              .backgroundColor('#FFFFFF')
+              .borderRadius(12)
+              .shadow({ radius: 8, color: '#10000000', offsetY: 2 })
             }
           })
         }
         .columnsTemplate('1fr')
-        .rowsGap(20)
+        .rowsGap(16)
         .padding({ left: 16, right: 16, bottom: 16 })
         .width('100%')
         .opacity(this.postsOpacity)
