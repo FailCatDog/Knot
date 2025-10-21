@@ -1,6 +1,5 @@
 import { logout, LogoutRequest } from '../services/api/UserApi'
 import { TokenManager } from '../services/TokenManager'
-import { common } from '@kit.AbilityKit'
 import { ToastUtil } from '../common/utils/ToastUtil'
 
 @Builder
@@ -165,20 +164,18 @@ export struct SettingPage {
         }
 
         const response = await logout(logoutParam)
+        
         if (response.success) {
           ToastUtil.getInstance().show('登出成功');
+          
+          // 清除本地 token
           await tokenManager.clearToken()
           
-          try {
-            let context = getContext(this) as common.UIAbilityContext;
-            let eventHub = context.eventHub;
-            eventHub.emit('userLogoutStatusChanged', {
-              isLoggedIn: false
-            });
-          } catch (error) {
-            console.error('发送退出事件失败:', error);
-          }
+          // 更新全局登录状态（触发 ProfilePage 更新）
+          AppStorage.set<boolean>('isUserLoggedIn', false)
+          AppStorage.set<number>('logoutTimestamp', Date.now())
           
+          // 清空导航栈，返回主页面
           this.pathStack.clear()
         } else {
           ToastUtil.getInstance().show(response.message || '登出失败');
@@ -188,7 +185,7 @@ export struct SettingPage {
         this.pathStack.clear()
       }
     } catch (error) {
-      console.error('登出请求失败:', error)
+      console.error('[SettingPage] 退出登录失败:', error)
       ToastUtil.getInstance().show('网络请求失败');
     }
   }

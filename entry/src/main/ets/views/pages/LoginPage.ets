@@ -1,6 +1,5 @@
 import { AuthPageType } from './ProfilePage'
 import { http } from '../../services/api/HttpRequest'
-import { common } from '@kit.AbilityKit'
 import { AuthViewModel } from '../../viewmodels/AuthViewModel'
 
 @Component
@@ -17,17 +16,11 @@ export struct LoginPage {
     const result = await this.viewModel.login(this.username, this.password)
     
     if (result.success && result.userInfo) {
-      try {
-        let context = getContext(this) as common.UIAbilityContext
-        let eventHub = context.eventHub
-        eventHub.emit('userLoginStatusChanged', {
-          isLoggedIn: true,
-          userInfo: result.userInfo
-        })
-      } catch (error) {
-        console.error('[LoginPage] 发送事件失败:', error)
-      }
+      // 更新全局登录状态（触发 ProfilePage 更新）
+      AppStorage.set<boolean>('isUserLoggedIn', true)
+      AppStorage.set<number>('loginTimestamp', Date.now())
       
+      // 清空导航栈，返回主页面
       this.pathStack.clear()
     }
   }
