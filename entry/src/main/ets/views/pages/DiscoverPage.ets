@@ -4,6 +4,7 @@ import { PostEntity, likePost, unlikePost } from '../../services/api/PostApi'
 import { PostStateManager } from '../../common/utils/PostStateManager'
 import { LoadingComponent } from '../components/LoadingComponent'
 
+// 定义一个跳转到帖子详情页需要传递的参数
 interface PostDetailNavParam {
   post_id: string
   user_avatar?: string
@@ -18,19 +19,31 @@ export struct DiscoverPage {
   @State likeCounts: Map<string, number> = new Map()
   @State imageList: ImageItem[] = []
   @State isInitialLoading: boolean = true
-  @Consume('NavPathStack') navPathStack: NavPathStack
-  private scroller: Scroller = new Scroller()
+  @Consume('NavPathStack') navPathStack: NavPathStack // 父组件传过来的导航栈
+  private scroller: Scroller = new Scroller() // 瀑布流控制器
 
   async aboutToAppear(): Promise<void> {
-    await this.loadInitialData()
+    await this.loadInitialData()  // 加载初数据
+  }
+  async loadInitialData(): Promise<void> {
+    this.isInitialLoading = true
+    await this.viewModel.loadPosts(true)
+    this.updateImageList()
+    this.isInitialLoading = false
   }
 
+  /**
+   * 用于页面显示的时候同步帖子状态，并且从详情页面返回的时候更新点赞状态
+   * 实现跨页面状态同步设计
+   */
   onPageShow(): void {
     this.syncPostStates()
   }
-
   syncPostStates(): void {
+    // 1. 获取状态变更管理器实例
     const postStateManager = PostStateManager.getInstance()
+
+    // 2. 更新本地
     this.imageList.forEach(item => {
       if (postStateManager.hasPostState(item.id)) {
         const state = postStateManager.getPostState(item.id)
@@ -47,18 +60,18 @@ export struct DiscoverPage {
     })
   }
 
-  async loadInitialData(): Promise<void> {
-    this.isInitialLoading = true
-    await this.viewModel.loadPosts(true)
-    this.updateImageList()
-    this.isInitialLoading = false
-  }
-
+  /**
+   * 更多数据加载
+   * @returns
+   */
   async loadMoreData(): Promise<void> {
-    await this.viewModel.loadPosts(false)
+    await this.viewModel.loadPosts(false) // false表示追加
     this.updateImageList()
   }
 
+  /**
+   * 更新列表
+   */
   updateImageList(): void {
     this.imageList = this.viewModel.posts.map((post: PostEntity) => this.convertPostToImageItem(post))
     this.imageList.forEach(item => {
@@ -68,6 +81,11 @@ export struct DiscoverPage {
     })
   }
 
+  /**
+   * 数据转换
+   * @param post
+   * @returns
+   */
   convertPostToImageItem(post: PostEntity): ImageItem {
     const firstImage = post.images && post.images.length > 0 ? post.images[0] : null
     const isLiked = this.likedItems.has(post.post_id) ? this.isItemLiked(post.post_id) : post.has_liked
@@ -86,7 +104,7 @@ export struct DiscoverPage {
       userId: post.author?.username || post.username || `用户${post.user_id}`,
       likeCount: likeCount,
       isLiked: isLiked,
-      imageHeight: firstImage ? Math.min(Math.max(firstImage.height / firstImage.width * 280, 150), 420) : 280
+      imageHeight: firstImage ? Math.min(Math.max(firstImage.height / firstImage.width * 280, 150), 420) : 280  // 计算图片高度，根据宽高比自适应，这是实现虚假帖子错位的关键
     }
   }
 
@@ -109,7 +127,7 @@ export struct DiscoverPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor('#FFFFFF')
   }
 
   @Builder
@@ -132,13 +150,14 @@ export struct DiscoverPage {
     .width('100%')
     .height(56)
     .padding({ left: 16, right: 16 })
-    .backgroundColor('#F5F5F5')
+    .backgroundColor('#FFFFFF')
+    .border({ width: { bottom: 1 }, color: { bottom: '#E5E5E5' } })
   }
 
   @Builder
   buildContent(): void {
-    WaterFlow({ scroller: this.scroller }) {
-      ForEach(this.imageList, (item: ImageItem, index: number) => {
+    WaterFlow({ scroller: this.scroller }) {  // 瀑布流组件，支持不规则或者规则网格排列的列表，scroller的作用是控制滚动行为
+      ForEach(this.imageList, (item: ImageItem, index: number) => { // 生成子组件的回调函数
         FlowItem() {
           ImageCard({
             item: {
@@ -157,7 +176,7 @@ export struct DiscoverPage {
           })
         }
         .width('100%')
-        .constraintSize({
+        .constraintSize({ // 列布局模板设计
           maxWidth: '100%',
           minWidth: 0
         })
@@ -184,14 +203,19 @@ export struct DiscoverPage {
     .padding({ left: 8, right: 8, top: 8, bottom: 16 })
     .width('100%')
     .layoutWeight(1)
-    .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
-    .onReachEnd(() => {
+    .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true }) // 边缘效果，触底回弹，完全是为了好看
+    .onReachEnd(() => { // 触底触发加载更多
       if (this.viewModel.hasMore && !this.viewModel.isLoading) {
         this.loadMoreData()
       }
     })
   }
 
+  /**
+   * 点赞处理
+   * @param id
+   * @returns
+   */
   async handleLikeClick(id: string): Promise<void> {
     const isCurrentlyLiked = this.isItemLiked(id)
     const response = isCurrentlyLiked ? await unlikePost(id) : await likePost(id)
@@ -204,10 +228,6 @@ export struct DiscoverPage {
       }
       this.likeCounts.set(id, response.data.like_count)
     }
-  }
-
-  handleFollowClick(id: string): void {
-    console.log(`关注用户: ${id}`)
   }
 
   // 将时间戳转换为日期字符串
@@ -224,6 +244,10 @@ export struct DiscoverPage {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   }
 
+  /**
+   * 处理卡片点击
+   * @param id
+   */
   handleCardClick(id: string): void {
     const item = this.imageList.find(item => item.id === id)
     const userAvatar = typeof item?.userAvatar === 'string' ? item.userAvatar : undefined

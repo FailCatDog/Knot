@@ -26,6 +26,7 @@ interface PostEndpoints {
   LIKE_POST: string;
   UNLIKE_POST: string;
   GET_LIKE_STATUS: string;
+  SHARE_POST: string;
 }
 
 interface UserEndpoints {
@@ -73,7 +74,8 @@ export class ApiConstants {
     GET_FAVORITE_STATUS: '/posts/{post_id}/favorite/status',
     LIKE_POST: '/posts/{post_id}/like',
     UNLIKE_POST: '/posts/{post_id}/like',
-    GET_LIKE_STATUS: '/posts/{post_id}/like/status'
+    GET_LIKE_STATUS: '/posts/{post_id}/like/status',
+    SHARE_POST: '/shares/posts'
   };
 
   static readonly USER_ENDPOINTS: UserEndpoints = {

@@ -45,7 +45,6 @@ export struct ImageCard {
 
       // 内容区域
       Column() {
-        // 标题
         if (this.item.title && this.item.title.trim() !== '') {
           Text(this.item.title)
             .fontSize(14)
@@ -54,7 +53,7 @@ export struct ImageCard {
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
-            .margin({ bottom: 8 })
+            .margin({ bottom: 4 })
         }
 
         Row() {
@@ -63,7 +62,7 @@ export struct ImageCard {
               .width(24)
               .height(24)
               .borderRadius(12)
-              .margin({ right: 8 })
+              .margin({ right: 6 })
               .objectFit(ImageFit.Cover)
 
             Text(this.item.userId)
@@ -105,9 +104,9 @@ export struct ImageCard {
         .width('100%')
         .alignItems(VerticalAlign.Center)
       }
-      .padding(12)
+      .padding(8)
       .width('100%')
-      .backgroundColor('#F5F5F5')
+      .backgroundColor('#FFFFFF')
     }
     .borderRadius(12)//由于色差，为我的页面的帖子渲染添加圆角
     .width('100%')

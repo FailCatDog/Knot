@@ -13,10 +13,14 @@ struct MainPage {
   @Provide('NavPathStack') pathStack: NavPathStack = new NavPathStack();
   private lastValidIndex: number = 1
 
+  /**
+   * 生命周期
+   */
   aboutToAppear(): void {
     console.log('[MainPage] aboutToAppear called')
     console.log('[MainPage] pathStack created:', !!this.pathStack)
-    
+
+    // token过期回调
     TokenManager.setTokenExpiredCallback(() => {
       ToastUtil.getInstance().show('登录已过期，请重新登录')
       this.currentIndex = 4
@@ -54,7 +58,7 @@ struct MainPage {
           .tabBar(this.TabBuilder('我的', 4))
         }
         .onChange((index: number) => {
-          if (index === 2) {
+          if (index === 2) {  // 跳转发布页
             this.tabsController.changeIndex(this.lastValidIndex)
             this.currentIndex = this.lastValidIndex
             this.pathStack.pushPathByName('CreatePostPage', null, false)
@@ -73,12 +77,17 @@ struct MainPage {
       .width('100%')
       .height('100%')
     }
-    .mode(NavigationMode.Stack)
+    .mode(NavigationMode.Stack) // 路由模式
     .width('100%')
     .height('100%')
     .hideTitleBar(true)
   }
 
+  /**
+   * 底部导航栏构建起
+   * @param title 标题
+   * @param targetIndex 索引
+   */
   @Builder
   TabBuilder(title: string, targetIndex: number) {
     Column() {
@@ -102,6 +111,9 @@ struct MainPage {
     })
   }
 
+  /**
+   * 单独的发布页面按钮的构建起
+   */
   @Builder
   AddTabBuilder() {
     Column() {
@@ -128,6 +140,6 @@ struct MainPage {
       $r('app.media.ic_profile')
     ]
     // 调整索引映射
-    return icons[index > 2 ? index - 1 : index]
+    return icons[index > 2 ? index - 1 : index] // 跳过了中间的发布按钮
   }
 }

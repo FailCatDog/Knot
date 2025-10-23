@@ -1,5 +1,8 @@
 import { UIContext } from '@kit.ArkUI'
 
+/**
+ * 通知组件
+ */
 export class ToastUtil {
   private static instance: ToastUtil
   private uiContext: UIContext | null = null
