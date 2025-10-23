@@ -950,5 +950,4 @@ export struct ProfilePage {
     }
   }
 
-
 }
