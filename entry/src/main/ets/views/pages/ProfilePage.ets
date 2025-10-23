@@ -73,7 +73,8 @@ export struct ProfilePage {
     }
   }
   
-  // 监听登录状态变化
+
+  // 监听登录状态变化，重新加载用户数据
   onLoginTimestampChange() {
     if (this.loginTimestamp > 0) {
       console.log('[ProfilePage] 检测到登录成功，重新加载用户数据')
@@ -93,8 +94,8 @@ export struct ProfilePage {
       })
     }
   }
-  
-  // 监听退出登录状态变化
+
+  // 监听退出登录状态变化，重置为未登录状态
   onLogoutTimestampChange() {
     if (this.logoutTimestamp > 0) {
       console.log('[ProfilePage] 检测到退出登录，重置为未登录状态')
@@ -111,6 +112,7 @@ export struct ProfilePage {
     }
   }
 
+  // 页面初始化，检查登录状态并加载数据
   aboutToAppear(): void {
     console.log('[ProfilePage] aboutToAppear - 初始化')
     
@@ -127,8 +129,8 @@ export struct ProfilePage {
       this.initializeLikeStates()
     }
   }
-  
-  // 初始化分享消息（从API获取真实数据）
+
+  // 初始化分享消息，从API获取真实数据
   async initializeShareMessages(): Promise<void> {
     console.log('[ProfilePage] 开始初始化分享消息')
     
@@ -181,8 +183,7 @@ export struct ProfilePage {
   
   
   // aboutToDisappear 不再需要，AppStorage 会自动管理状态
-
-  // 初始化点赞状态
+  // 初始化点赞状态，从ViewModel获取数据
   initializeLikeStates(): void {
     // 先清空所有旧状态
     this.workLikedItems.clear()
@@ -214,6 +215,7 @@ export struct ProfilePage {
   }
 
   @Builder
+  // 构建欢迎页面视图
   buildWelcomeView() {
     Column() {
       Column() {
@@ -278,6 +280,7 @@ export struct ProfilePage {
   }
 
 
+  // 构建主页面视图
   build() {
     Stack() {
       if (!this.viewModel.isUserLoggedIn && !this.viewModel.isLoading) {
@@ -484,6 +487,7 @@ export struct ProfilePage {
 
 
   @Builder
+  // 渲染已登录用户的视图
   renderLoggedInView() {
     Row() {
       Image(this.viewModel.userInfo.avatar_url && this.viewModel.userInfo.avatar_url.trim() !== '' ? this.viewModel.userInfo.avatar_url : $r('app.media.head'))
@@ -572,7 +576,8 @@ export struct ProfilePage {
     .alignItems(HorizontalAlign.Center)
   }
 
-  // 处理作品卡片点击
+
+  // 处理作品卡片点击事件，跳转到帖子详情页
   handleWorkCardClick(id: string): void {
     const item = this.viewModel.workItems.find(item => item.id === id)
     const userAvatar = typeof item?.userAvatar === 'string' ? item.userAvatar : undefined
@@ -584,7 +589,7 @@ export struct ProfilePage {
     this.pathStack.pushPathByName('PostDetailPage', param, false)
   }
 
-  // 处理收藏卡片点击
+  // 处理收藏卡片点击事件，跳转到帖子详情页
   handleLikeCardClick(id: string): void {
     const item = this.viewModel.likeItems.find(item => item.id === id)
     const userAvatar = typeof item?.userAvatar === 'string' ? item.userAvatar : undefined
@@ -596,7 +601,7 @@ export struct ProfilePage {
     this.pathStack.pushPathByName('PostDetailPage', param, false)
   }
 
-  // 处理作品点赞
+  // 处理作品点赞/取消点赞操作
   async handleWorkLikeClick(id: string): Promise<void> {
     const isCurrentlyLiked: boolean = this.workLikedItems.has(id)
     const result: ApiResponse<LikePostData> = await this.viewModel.handleWorkLikeClick(id)
@@ -615,7 +620,7 @@ export struct ProfilePage {
     }
   }
 
-  // 处理收藏点赞
+  // 处理收藏点赞/取消点赞操作
   async handleLikeLikeClick(id: string): Promise<void> {
     const isCurrentlyLiked: boolean = this.likeLikedItems.has(id)
     const result: ApiResponse<LikePostData> = await this.viewModel.handleLikeLikeClick(id)
@@ -634,26 +639,29 @@ export struct ProfilePage {
     }
   }
 
-  // 获取作品点赞状态
+  // 检查作品是否已点赞
   isWorkItemLiked(id: string): boolean {
     return this.workLikedItems.has(id)
   }
 
-  // 获取作品点赞数
+
+  // 获取作品点赞数量
   getWorkItemLikeCount(id: string): number {
     return this.workLikeCounts.get(id) || 0
   }
 
-  // 获取收藏点赞状态
+  // 检查收藏是否已点赞
   isLikeItemLiked(id: string): boolean {
     return this.likeLikedItems.has(id)
   }
 
-  // 获取收藏点赞数
+
+  // 获取收藏点赞数量
   getLikeItemLikeCount(id: string): number {
     return this.likeLikeCounts.get(id) || 0
   }
 
+  // 处理作品列表下拉刷新
   async handleWorkRefresh(): Promise<void> {
     this.isWorkRefreshing = true
     await this.viewModel.loadUserPosts(true)
@@ -661,6 +669,7 @@ export struct ProfilePage {
     this.isWorkRefreshing = false
   }
 
+  // 处理收藏列表下拉刷新
   async handleLikeRefresh(): Promise<void> {
     this.isLikeRefreshing = true
     await this.viewModel.loadUserFavorites(true)
@@ -669,6 +678,7 @@ export struct ProfilePage {
   }
 
   @Builder
+  // 构建作品内容区域
   WorkContent() {
     if (this.viewModel.workLoading && this.viewModel.workItems.length === 0) {
       LoadingComponent()
@@ -773,6 +783,7 @@ export struct ProfilePage {
   }
 
   @Builder
+  // 构建收藏内容区域
   LikeContent() {
     if (this.viewModel.likeLoading && this.viewModel.likeItems.length === 0) {
       LoadingComponent()
@@ -839,7 +850,8 @@ export struct ProfilePage {
     }
   }
 
-  // 加载分享消息
+
+  // 加载分享消息列表
   async loadShareMessages() {
     if (this.isLoadingShares) return
     
