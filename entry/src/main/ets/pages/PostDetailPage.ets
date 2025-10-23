@@ -1,10 +1,10 @@
 import { PostDetailEntity } from '../models/entities/PostDetailEntity'
 import { ShareDrawer } from '../views/components/ShareDrawer'
-import { favoritePost, unfavoritePost, getPostDetail, getFavoriteStatus, likePost, unlikePost, getLikeStatus } from '../services/api/PostApi'
+import { favoritePost, unfavoritePost, getPostDetail, getFavoriteStatus, likePost, unlikePost, getLikeStatus, sharePost } from '../services/api/PostApi'
 import { ToastUtil } from '../common/utils/ToastUtil'
 import { PostStateManager } from '../common/utils/PostStateManager'
 import { LoadingComponent } from '../views/components/LoadingComponent'
-import { followUser, getCurrentUserInfo, getFollowStatus } from '../services/api/UserApi'
+import { followUser, getCurrentUserInfo, getFollowStatus, getFollowingList, type FollowingUserInfo } from '../services/api/UserApi'
 import { TokenManager } from '../services/TokenManager'
 import { CommentSection } from '../views/components/CommentSection'
 import { createComment, getComments, type CommentEntity } from '../services/api/CommentApi'
@@ -34,6 +34,10 @@ struct PostDetailPage {
   @State refreshTimestamp: number = 0
   @State initialComments: CommentEntity[] = []
   @State showShareCardPreview: boolean = false
+  @State showFriendSelector: boolean = false
+  @State followingList: FollowingUserInfo[] = []
+  @State selectedFriend: FollowingUserInfo | null = null
+  @State showShareConfirm: boolean = false
   @Consume('NavPathStack') navPathStack: NavPathStack
   pathInfos: NavPathStack = new NavPathStack()
   private postId: string = ''
@@ -124,6 +128,7 @@ struct PostDetailPage {
     } else if (this.postDetail) {
       Scroll() {
         Column() {
+          // 图片内容
           if (this.postDetail.imageUrls && this.postDetail.imageUrls.length > 0) {
             Swiper() {
               ForEach(this.postDetail.imageUrls, (imageUrl: string, index: number) => {
@@ -151,6 +156,7 @@ struct PostDetailPage {
             })
           }
 
+          // 标题
           Text(this.postDetail.title)
             .fontSize(20)
             .fontColor('#333333')
@@ -158,6 +164,7 @@ struct PostDetailPage {
             .width('100%')
             .margin({ top: 16, bottom: 12 })
 
+          // 描述
           Text(this.postDetail.description)
             .fontSize(16)
             .fontColor('#666666')
@@ -165,6 +172,7 @@ struct PostDetailPage {
             .width('100%')
             .margin({ bottom: 16 })
 
+          // 发布日期
           Row() {
             Text(this.postDetail.publishDate)
               .fontSize(14)
@@ -173,11 +181,11 @@ struct PostDetailPage {
           .width('100%')
           .margin({ bottom: 8 })
 
+          // 评论区
           Divider()
             .color('#F0F0F0')
             .strokeWidth(8)
             .margin({ top: 16 })
-
           CommentSection({
             postId: this.postDetail.postId,
             refreshTimestamp: this.refreshTimestamp,
@@ -222,6 +230,10 @@ struct PostDetailPage {
     this.navPathStack.pushPathByName('UserProfilePage', param, false)
   }
 
+  /**
+   * 处理关注按钮点击
+   * @returns
+   */
   async handleFollow(): Promise<void> {
     if (!this.postDetail) return
     
@@ -232,6 +244,10 @@ struct PostDetailPage {
     }
   }
 
+  /**
+   * 处理喜欢
+   * @returns
+   */
   async handleLike(): Promise<void> {
     if (!this.postDetail) return
 
@@ -245,35 +261,53 @@ struct PostDetailPage {
     }
   }
 
+  // 抽屉的一堆按钮
   handleCopyLink(): void {
     this.showShareDrawer = false
   }
-
   handleShareWeChat(): void {
     this.showShareDrawer = false
   }
-
   handleShareMoments(): void {
     this.showShareDrawer = false
   }
-
   handleShareQQ(): void {
     this.showShareDrawer = false
   }
-
   handleShareQZone(): void {
     this.showShareDrawer = false
   }
-
   handleRepost(): void {
     this.showShareDrawer = false
     this.generateShareCard()
   }
-
-  handleMessage(): void {
+  async handleMessage(): Promise<void> {
+    this.showShareDrawer = false
+    const response = await getFollowingList(this.currentUserId)
+    if (response.success && response.data) {
+      this.followingList = response.data.users
+      if (this.followingList.length === 0) {
+        ToastUtil.getInstance().show('暂无关注的好友')
+        return
+      }
+      this.showFriendSelector = true
+    } else {
+      ToastUtil.getInstance().show(response.message || '获取关注列表失败')
+    }
+  }
+  handleFeedback(): void {
+    this.showShareDrawer = false
+  }
+  handleReport(): void {
+    this.showShareDrawer = false
+  }
+  handleEdit(): void {
     this.showShareDrawer = false
   }
 
+  /**
+   * 生成分享卡片
+   */
   async generateShareCard() {
     if (!this.postDetail) return
 
@@ -294,18 +328,10 @@ struct PostDetailPage {
     }
   }
 
-  handleFeedback(): void {
-    this.showShareDrawer = false
-  }
 
-  handleReport(): void {
-    this.showShareDrawer = false
-  }
-
-  handleEdit(): void {
-    this.showShareDrawer = false
-  }
-
+  /**
+   * 放大查看
+   */
   @Builder
   buildImagePreview() {
     if (this.postDetail && this.postDetail.imageUrls.length > 0) {
@@ -323,21 +349,22 @@ struct PostDetailPage {
             Image(imageUrl)
               .width('100%')
               .height('100%')
-              .objectFit(ImageFit.Contain)
+              .objectFit(ImageFit.Contain)  // 图片完整展示，保持比例
           })
         }
         .width('100%')
         .height('100%')
-        .index(this.currentImageIndex)
+        .index(this.currentImageIndex)  // 从点击的图片开始
         .indicator(this.postDetail.imageUrls.length > 1 ? 
           DotIndicator.dot()
             .color('#66FFFFFF')
             .selectedColor('#ffdd0223') : false)
-        .loop(false)
+        .loop(false)  // 不循环
         .gesture(
+          // 手势处理，上下滑动退出
           PanGesture({ direction: PanDirection.Vertical })
             .onActionEnd((event: GestureEvent) => {
-              if (Math.abs(event.offsetY) > 50) {
+              if (Math.abs(event.offsetY) > 50) { // 滑动超过50px
                 this.showImagePreview = false
               }
             })
@@ -348,7 +375,7 @@ struct PostDetailPage {
       }
       .width('100%')
       .height('100%')
-      .transition(TransitionEffect.OPACITY.animation({ duration: 400, curve: Curve.EaseInOut }))
+      .transition(TransitionEffect.OPACITY.animation({ duration: 400, curve: Curve.EaseInOut }))  // 淡入淡出动画
     }
   }
 
@@ -388,17 +415,188 @@ struct PostDetailPage {
     }
   }
 
+  @Builder
+  buildFriendSelector() {
+    if (this.showFriendSelector) {
+      Stack({ alignContent: Alignment.Bottom }) {
+        Column()
+          .width('100%')
+          .height('100%')
+          .backgroundColor('rgba(0, 0, 0, 0.5)')
+          .onClick(() => {
+            this.showFriendSelector = false
+          })
+
+        Column() {
+          Row() {
+            Text('选择好友')
+              .fontSize(18)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#333333')
+              .layoutWeight(1)
+
+            Image($r('app.media.ic_close'))
+              .width(24)
+              .height(24)
+              .fillColor('#999999')
+              .onClick(() => {
+                this.showFriendSelector = false
+              })
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+
+          Divider()
+            .color('#F0F0F0')
+
+          List({ space: 0 }) {
+            ForEach(this.followingList, (friend: FollowingUserInfo) => {
+              ListItem() {
+                Row({ space: 12 }) {
+                  Image(friend.avatar_url)
+                    .width(48)
+                    .height(48)
+                    .borderRadius(24)
+
+                  Column({ space: 4 }) {
+                    Text(friend.username)
+                      .fontSize(16)
+                      .fontColor('#333333')
+                      .fontWeight(FontWeight.Medium)
+
+                    if (friend.bio) {
+                      Text(friend.bio)
+                        .fontSize(14)
+                        .fontColor('#999999')
+                        .maxLines(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    }
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1)
+                }
+                .width('100%')
+                .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+                .onClick(() => {
+                  this.selectedFriend = friend
+                  this.showFriendSelector = false
+                  this.showShareConfirm = true
+                })
+              }
+            })
+          }
+          .width('100%')
+          .layoutWeight(1)
+          .scrollBar(BarState.Auto)
+        }
+        .width('100%')
+        .height('70%')
+        .backgroundColor('#FFFFFF')
+        .borderRadius({ topLeft: 16, topRight: 16 })
+      }
+      .width('100%')
+      .height('100%')
+    }
+  }
+
+  @Builder
+  buildShareConfirm() {
+    if (this.showShareConfirm && this.selectedFriend) {
+      Stack() {
+        Column()
+          .width('100%')
+          .height('100%')
+          .backgroundColor('rgba(0, 0, 0, 0.5)')
+          .onClick(() => {
+            this.showShareConfirm = false
+            this.selectedFriend = null
+          })
+
+        Column({ space: 0 }) {
+          Column({ space: 8 }) {
+            Text('确认分享')
+              .fontSize(18)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#333333')
+
+            Text(`将帖子分享给 ${this.selectedFriend.username}？`)
+              .fontSize(14)
+              .fontColor('#666666')
+              .margin({ top: 8 })
+          }
+          .width('100%')
+          .padding(24)
+
+          Divider()
+            .color('#F0F0F0')
+
+          Row() {
+            Button('取消')
+              .fontSize(16)
+              .fontColor('#666666')
+              .backgroundColor('#F5F5F5')
+              .layoutWeight(1)
+              .onClick(() => {
+                this.showShareConfirm = false
+                this.selectedFriend = null
+              })
+
+            Button('确定')
+              .fontSize(16)
+              .fontColor('#FFFFFF')
+              .backgroundColor('#ffdd0223')
+              .layoutWeight(1)
+              .onClick(() => {
+                this.handleShareConfirm()
+              })
+          }
+          .width('100%')
+          .padding(16)
+          .justifyContent(FlexAlign.SpaceBetween)
+        }
+        .width('80%')
+        .backgroundColor('#FFFFFF')
+        .borderRadius(12)
+      }
+      .width('100%')
+      .height('100%')
+    }
+  }
+
+  async handleShareConfirm(): Promise<void> {
+    if (!this.selectedFriend || !this.postDetail) return
+
+    const response = await sharePost({
+      post_id: this.postDetail.postId,
+      receiver_id: this.selectedFriend.user_id
+    })
+
+    if (response.success) {
+      ToastUtil.getInstance().show('分享成功')
+      this.showShareConfirm = false
+      this.selectedFriend = null
+    } else {
+      ToastUtil.getInstance().show(response.message || '分享失败')
+    }
+  }
+
+  /**
+   * 数据加载
+   * @returns
+   */
   async loadPostData(): Promise<void> {
     if (!this.postId) return
 
     this.isLoading = true
 
+    // 1. 获取当前用户id
     const tokenManager = TokenManager.getInstance()
     const cachedUserId = await tokenManager.getUserId()
     if (cachedUserId) {
       this.currentUserId = cachedUserId
     }
 
+    // 2. 获取帖子详情
     const detailResponse = await getPostDetail(this.postId)
     
     if (detailResponse.success && detailResponse.data) {
@@ -406,6 +604,7 @@ struct PostDetailPage {
       const postUserId = typeof post.user_id === 'number' ? post.user_id.toString() : post.user_id
       this.isOwnPost = this.currentUserId === postUserId
 
+      // 3. 并行并行并行
       const favoritePromise = getFavoriteStatus(this.postId)
       const likePromise = getLikeStatus(this.postId)
       const commentsPromise = getComments(this.postId, 1, 20)
@@ -447,6 +646,7 @@ struct PostDetailPage {
         }
         
 
+        // 4. 构造
         this.postDetail = {
           postId: post.post_id,
           imageUrls: imageUrls,
@@ -508,6 +708,11 @@ struct PostDetailPage {
     this.isLoading = false
   }
 
+  /**
+   * 时间序列化
+   * @param timestamp
+   * @returns
+   */
   formatTimestamp(timestamp: number): string {
     const date = new Date(timestamp * 1000)
     const year = date.getFullYear()
@@ -516,6 +721,10 @@ struct PostDetailPage {
     return `${year}-${month}-${day}`
   }
 
+  /**
+   * 处理评论发送
+   * @returns
+   */
   async handleSendComment(): Promise<void> {
     if (!this.commentText.trim() || !this.postId) return
 
@@ -531,6 +740,9 @@ struct PostDetailPage {
     }
   }
 
+  /**
+   * 底部操作栏
+   */
   @Builder
   buildBottomBar() {
     Row({ space: 12 }) {
@@ -545,6 +757,7 @@ struct PostDetailPage {
           this.commentText = value
         })
 
+      // 发送按钮
       Button('发送')
         .fontSize(14)
         .fontColor('#FFFFFF')
@@ -558,6 +771,7 @@ struct PostDetailPage {
           this.handleSendComment()
         })
 
+      // 点赞按钮
       Row({ space: 4 }) {
         Image(this.postDetail?.isLiked ? $r('app.media.ic_heart_filled') : $r('app.media.ic_heart_outline'))
           .width(24)
@@ -574,6 +788,7 @@ struct PostDetailPage {
         this.handleLike()
       })
 
+      // 收藏
       Row({ space: 4 }) {
         Image(this.postDetail?.isFavorited ? $r('app.media.ic_favorite_filled') : $r('app.media.ic_favorite_outline'))
           .width(24)
@@ -637,6 +852,14 @@ struct PostDetailPage {
 
         if (this.showShareCardPreview) {
           this.buildShareCardPreviewDialog()
+        }
+
+        if (this.showFriendSelector) {
+          this.buildFriendSelector()
+        }
+
+        if (this.showShareConfirm) {
+          this.buildShareConfirm()
         }
       }
       .width('100%')

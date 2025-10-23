@@ -36,6 +36,9 @@ struct CreatePostPage {
     .hideTitleBar(true)
   }
 
+  /**
+   * 顶栏构建器
+   */
   @Builder
   buildHeader() {
     Row() {
@@ -77,6 +80,9 @@ struct CreatePostPage {
     .backgroundColor('#FFFFFF')
   }
 
+  /**
+   * 中间内容构建起
+   */
   @Builder
   buildContent() {
     Scroll() {
@@ -134,13 +140,14 @@ struct CreatePostPage {
             .fontColor('#666666')
             .width('100%')
 
-          Flex({ wrap: FlexWrap.Wrap, alignItems: ItemAlign.Start }) {
+          // 图片选择区域
+          Flex({ wrap: FlexWrap.Wrap, alignItems: ItemAlign.Start }) { // 允许子项换行（超出一行时自动折到下一行） 子项在垂直方向（交叉轴）上左对齐
             ForEach(this.selectedImageUris, (uri: string, index: number) => {
-              Stack({ alignContent: Alignment.TopEnd }) {
+              Stack({ alignContent: Alignment.TopEnd }) { // 堆叠布局：图片在上，删除按钮在右上角
                 Image(uri)
                   .width(100)
                   .height(100)
-                  .objectFit(ImageFit.Cover)
+                  .objectFit(ImageFit.Cover) // 图片裁剪适配
                   .borderRadius(8)
 
                 Button() {
@@ -266,28 +273,39 @@ struct CreatePostPage {
     .edgeEffect(EdgeEffect.Spring)
   }
 
-  // 选择图片
+  /**
+   * 图片选择
+   */
   async selectImages() {
+
+    // 1. 配置适配器 todo
     const photoSelectOptions = new picker.PhotoSelectOptions();
     photoSelectOptions.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
     photoSelectOptions.maxSelectNumber = 9 - this.selectedImageUris.length;
 
+    // 2. 打开系统相册
     const photoPicker = new picker.PhotoViewPicker();
     const result = await photoPicker.select(photoSelectOptions);
 
+    // 3. 处理选择结果
     if (result && result.photoUris && result.photoUris.length > 0) {
-      this.selectedImageUris.push(...result.photoUris);
-      this.viewModel.setImages([...this.viewModel.selectedImages, ...result.photoUris]);
+      this.selectedImageUris.push(...result.photoUris);  // 添加到本地数组
+      this.viewModel.setImages([...this.viewModel.selectedImages, ...result.photoUris]); // 同步到ViewModel
     }
   }
 
   // 移除图片
   removeImage(index: number) {
+    // 从本地数组和视图模型中去除
     this.selectedImageUris.splice(index, 1);
     this.viewModel.selectedImages.splice(index, 1);
     this.viewModel.setImages([...this.viewModel.selectedImages]);
   }
 
+  /**
+   * 一个表单验证
+   * @returns
+   */
   canSubmit(): boolean {
     return this.titleInput.trim().length > 0 && this.selectedImageUris.length > 0;
   }

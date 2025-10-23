@@ -2,6 +2,9 @@ import { submitImage, type CreatePostParams, type SubmitImageData } from '../ser
 import { fileIo } from '@kit.CoreFileKit';
 import { ToastUtil } from '../common/utils/ToastUtil';
 
+/**
+ * 数据模型
+ */
 export class CreatePostViewModel {
   title: string = '';
   description: string = '';
@@ -13,21 +16,17 @@ export class CreatePostViewModel {
   setTitle(title: string): void {
     this.title = title;
   }
-
   setDescription(desc: string): void {
     this.description = desc;
   }
-
   setImages(images: string[]): void {
     this.selectedImages = images;
   }
-
   addTag(tag: string): void {
     if (tag.trim() && !this.tags.includes(tag.trim())) {
       this.tags.push(tag.trim());
     }
   }
-
   removeTag(tag: string): void {
     const index = this.tags.indexOf(tag);
     if (index > -1) {
@@ -47,6 +46,13 @@ export class CreatePostViewModel {
     return true;
   }
 
+  /**
+   * 提交帖子API方法
+   * @returns
+   *
+   * 为什么要读取文件？？？？？？
+   * 因为相册选择器返回的是文件的URL路径，然后上传文件需要的是ArrayBuffer，也就是二进制数据
+   */
   async submitPost(): Promise<boolean> {
     if (!this.validate() || this.isSubmitting) return false;
 
@@ -57,9 +63,11 @@ export class CreatePostViewModel {
     for (let i = 0; i < this.selectedImages.length; i++) {
       const imageUri = this.selectedImages[i];
 
+      // 打开文件并获取文件大小
       const file = fileIo.openSync(imageUri, fileIo.OpenMode.READ_ONLY);
       const stat: fileIo.Stat = fileIo.statSync(file.fd);
       const buffer = new ArrayBuffer(stat.size);
+      // 读取文件到ArrayBuffer
       fileIo.readSync(file.fd, buffer);
       fileIo.closeSync(file);
 

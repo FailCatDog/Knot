@@ -153,3 +153,20 @@ export const getUserPosts = async (userId: string, page: number = 1, pageSize: n
   const url = ApiConstants.ENDPOINTS.GET_USER_POSTS.replace('{user_id}', userId);
   return httpRequest.get<GetPostsData>(`${url}?page=${page}&page_size=${pageSize}`);
 }
+
+export interface SharePostParams extends Record<string, string | number | boolean | object | undefined> {
+  post_id: string;
+  receiver_id: string;
+  share_message?: string;
+}
+
+export interface SharePostData {
+  message: string;
+}
+
+export const sharePost = async (params: SharePostParams): Promise<ApiResponse<SharePostData>> => {
+  return httpRequest.post<SharePostData, SharePostParams>(
+    ApiConstants.ENDPOINTS.SHARE_POST,
+    params
+  );
+}
