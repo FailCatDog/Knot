@@ -400,7 +400,7 @@ struct PostDetailPage {
     }
 
     const detailResponse = await getPostDetail(this.postId)
-
+    
     if (detailResponse.success && detailResponse.data) {
       const post = detailResponse.data.post
       const postUserId = typeof post.user_id === 'number' ? post.user_id.toString() : post.user_id
@@ -421,8 +421,31 @@ struct PostDetailPage {
         const imageUrls = post.images ? post.images.map(img => img.file_url) : []
         const publishDate = this.formatTimestamp(post.create_time)
 
-        const userAvatar = this.passedUserAvatar || post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/60/60'
-        const userName = this.passedUserName || post.author?.username || post.username || `用户${postUserId}`
+        
+        // 由于getPostDetail API没有返回author信息，我们需要从其他地方获取
+        let userAvatar = this.passedUserAvatar || post.avatar_url || 'https://picsum.photos/60/60'
+        let userName = this.passedUserName || post.username || `用户${postUserId}`
+        
+        // 尝试从用户作品API获取帖主信息
+        try {
+          const UserApi = await import('../services/api/UserApi')
+          const userPostsResponse = await UserApi.getUserPosts({
+            user_id: postUserId,
+            page: 1,
+            pageSize: 1
+          })
+          
+          if (userPostsResponse.success && userPostsResponse.data && userPostsResponse.data.posts.length > 0) {
+            const firstPost = userPostsResponse.data.posts[0]
+            if (firstPost.author) {
+              userAvatar = firstPost.author.avatar_url || userAvatar
+              userName = firstPost.author.username || userName
+            }
+          }
+        } catch (error) {
+          console.error('[PostDetailPage] 获取用户作品信息失败:', error)
+        }
+        
 
         this.postDetail = {
           postId: post.post_id,
