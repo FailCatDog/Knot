@@ -2,35 +2,47 @@ import { AuthPageType } from './ProfilePage'
 import { http } from '../../services/api/HttpRequest'
 import { AuthViewModel } from '../../viewmodels/AuthViewModel'
 
-// 测试用接口
+// 注册API响应接口
 interface RegisterApiResponse {
   success: boolean
   message: string
 }
 
+/**
+ * 注册页面组件
+ * 功能：新用户注册、表单验证、跳转登录
+ * 关键特性：完整的用户信息收集，支持必填和可选字段
+ */
 @Component
 export struct RegisterPage {
-  @State viewModel: AuthViewModel = new AuthViewModel()
-  @State username: string = ''
-  @State realName: string = ''
-  @State phone: string = ''
-  @State email: string = ''
-  @State password: string = ''
-  @State confirmPassword: string = ''
-  // @State testResult: string = ''  // 已删除 - 测试功能不再需要
+  // ========== 状态管理 ==========
+  @State viewModel: AuthViewModel = new AuthViewModel()  // 认证业务逻辑
+  @State username: string = ''                          // 用户名输入
+  @State realName: string = ''                          // 真实姓名输入
+  @State phone: string = ''                             // 手机号输入
+  @State email: string = ''                             // 邮箱输入（可选）
+  @State password: string = ''                          // 密码输入
+  @State confirmPassword: string = ''                   // 确认密码输入
 
-  @Link currentPage: AuthPageType
+  @Link currentPage: AuthPageType  // 当前页面类型（登录/注册）
 
+  /**
+   * 处理用户注册 - 核心业务方法
+   * 功能：收集用户信息，调用注册API，处理注册结果
+   * 关键流程：表单验证 → API调用 → 注册成功 → 跳转登录页
+   */
   private async handleRegister() {
+    // 🔑 关键：调用认证服务进行用户注册
     const result = await this.viewModel.register(
-      this.username,
-      this.realName,
-      this.phone,
-      this.email,
-      this.password,
-      this.confirmPassword
+      this.username,        // 用户名（必填）
+      this.realName,        // 真实姓名（必填）
+      this.phone,           // 手机号（必填）
+      this.email,           // 邮箱（可选）
+      this.password,        // 密码（必填）
+      this.confirmPassword  // 确认密码（必填）
     )
     
+    // 🔑 关键：注册成功后跳转到登录页面
     if (result.success) {
       this.currentPage = AuthPageType.LOGIN
     }
@@ -40,7 +52,7 @@ export struct RegisterPage {
     Column({ space: 16 }) {
       Column({ space: 12 }) {
         TextInput({ text: this.username, placeholder: '请输入用户名（3-50字符）' })
-          .margin({ top: 80 })
+          .margin({ top: 10 })
           .onChange((value: string) => {
             this.username = value
           })
@@ -84,7 +96,7 @@ export struct RegisterPage {
 
         TextInput({
           text: this.password,
-          placeholder: '请输入密码（至少6位）'
+          placeholder: '请输入密码（至少8位）'
         })
           .onChange((value: string) => {
             this.password = value
@@ -149,7 +161,7 @@ export struct RegisterPage {
             this.currentPage = AuthPageType.LOGIN
           })
       }
-      .margin({ top: 10 })
+      .margin({ top: 20, bottom: 40 })
 
       // 测试按钮已删除 - 不再需要
       // Column() {
@@ -173,13 +185,11 @@ export struct RegisterPage {
       // }
       // .width('100%')
       // .alignItems(HorizontalAlign.Center)
-
-      Blank()
     }
     .width('100%')
     .height('100%')
     .backgroundColor('#FFFFFF')
-    .padding({ left: 20, right: 20 })
+    .padding({ left: 20, right: 20, bottom: 20 })
   }
 
   // 测试方法已注释 - 不再需要

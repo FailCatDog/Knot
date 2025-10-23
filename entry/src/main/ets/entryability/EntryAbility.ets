@@ -2,6 +2,7 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.Ab
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { TokenManager } from '../services/TokenManager';
+import { ReadStatusManager } from '../services/ReadStatusManager';
 import { ToastUtil } from '../common/utils/ToastUtil';
 
 const DOMAIN = 0x0000;
@@ -24,8 +25,13 @@ export default class EntryAbility extends UIAbility {
       const tokenManager = TokenManager.getInstance();
       await tokenManager.init(this.context);
       hilog.info(DOMAIN, 'testTag', 'TokenManager initialized successfully');
+      
+      hilog.info(DOMAIN, 'testTag', 'Initializing ReadStatusManager...');
+      const readStatusManager = ReadStatusManager.getInstance();
+      await readStatusManager.init(this.context);
+      hilog.info(DOMAIN, 'testTag', 'ReadStatusManager initialized successfully');
     } catch (error) {
-      hilog.error(DOMAIN, 'testTag', 'Failed to initialize TokenManager: %{public}s', JSON.stringify(error));
+      hilog.error(DOMAIN, 'testTag', 'Failed to initialize managers: %{public}s', JSON.stringify(error));
       return;
     }
 

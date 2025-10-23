@@ -6,6 +6,10 @@ import { ProfileViewModel } from '../../viewmodels/ProfileViewModel'
 import { LoadingComponent } from '../components/LoadingComponent'
 import { ApiResponse } from '../../services/api/HttpRequest'
 import { LikePostData } from '../../services/api/PostApi'
+import { ShareMessageDialog, ShareMessageItem } from '../components/ShareMessageDialog'
+import { ShareRecord, getReceivedShares } from '../../services/api/ShareApi'
+import { ReadStatusManager } from '../../services/ReadStatusManager'
+import { ApiConstants } from '../../services/api/ApiConstants'
 
 export enum AuthPageType {
   LOGIN = 0,
@@ -16,6 +20,11 @@ interface PostDetailNavParam {
   post_id: string
   user_avatar?: string
   user_name?: string
+}
+
+interface MockFriend {
+  name: string
+  avatar: string
 }
 
 
@@ -35,23 +44,49 @@ export struct ProfilePage {
   @State likeLikedItems: Set<string> = new Set()
   @State likeLikeCounts: Map<string, number> = new Map()
   
+  // 分享消息相关
+  @State showShareDialog: boolean = false
+  @State shareMessages: ShareMessageItem[] = []
+  @State unreadCount: number = 0 // 未读消息数量
+  @State isLoadingShares: boolean = false
+  
   // 标志位：是否已完成初始化检查
   private hasInitialized: boolean = false
   
   // 监听全局登录状态（通过 AppStorage 实现跨页面状态同步）
   @StorageLink('logoutTimestamp') @Watch('onLogoutTimestampChange') logoutTimestamp: number = 0
   @StorageLink('loginTimestamp') @Watch('onLoginTimestampChange') loginTimestamp: number = 0
+  @StorageLink('shouldShowShareDialog') @Watch('onShouldShowShareDialogChange') shouldShowShareDialog: number = 0
+  
+  // 监听分享弹窗状态变化（从详情页返回）
+  onShouldShowShareDialogChange() {
+    if (this.shouldShowShareDialog > 0) {
+      console.log('[ProfilePage] 检测到需要显示分享弹窗，时间戳:', this.shouldShowShareDialog)
+      // 延迟显示弹窗，确保页面转换完成
+      setTimeout(() => {
+        this.showShareDialog = true
+        console.log('[ProfilePage] 弹窗已显示')
+      }, 100)
+      // 重置标记
+      AppStorage.set<number>('shouldShowShareDialog', 0)
+    }
+  }
   
   // 监听登录状态变化
   onLoginTimestampChange() {
     if (this.loginTimestamp > 0) {
       console.log('[ProfilePage] 检测到登录成功，重新加载用户数据')
       
-      this.viewModel.checkUserLoginStatus().then(() => {
+      // 清空用户信息缓存，确保显示最新的用户信息
+      this.viewModel.clearUserInfoCache()
+      
+      this.viewModel.checkUserLoginStatus().then(async () => {
         if (this.viewModel.isUserLoggedIn) {
           this.viewModel.loadUserPosts(true)
-          this.viewModel.loadUserFavorites(true).then(() => {
+          this.viewModel.loadUserFavorites(true).then(async () => {
             this.initializeLikeStates()
+            // 收藏数据加载完成后初始化分享消息
+            await this.initializeShareMessages()
           })
         }
       })
@@ -81,8 +116,9 @@ export struct ProfilePage {
     // 只在第一次初始化时检查登录状态
     if (!this.hasInitialized) {
       this.hasInitialized = true
-      this.viewModel.checkUserLoginStatus().then(() => {
+      this.viewModel.checkUserLoginStatus().then(async () => {
         this.initializeLikeStates()
+        await this.initializeShareMessages()
       }).catch(() => {
         console.error('[ProfilePage] 检查登录状态失败')
       })
@@ -90,6 +126,58 @@ export struct ProfilePage {
       this.initializeLikeStates()
     }
   }
+  
+  // 初始化分享消息（从API获取真实数据）
+  async initializeShareMessages(): Promise<void> {
+    console.log('[ProfilePage] 开始初始化分享消息')
+    
+    try {
+      const response = await getReceivedShares({
+        page: 1,
+        page_size: 20
+      })
+      
+      if (response.success && response.data) {
+        
+        // 获取已读状态
+        const readPosts = await this.getReadPosts()
+        
+        // 转换API数据为ShareMessageItem格式
+        this.shareMessages = response.data.shares.map((record: ShareRecord): ShareMessageItem => ({
+          id: record.share_id,
+          friendAvatar: record.sender?.avatar_url ? `${ApiConstants.BASE_URL}${record.sender.avatar_url}` : '', // 分享人头像
+          friendName: record.sender?.username || '未知用户', // 分享人名字
+          postId: record.post.post_id,
+          postCover: record.post.cover_image ? `${ApiConstants.BASE_URL}${record.post.cover_image}` : '',
+          postTitle: record.post.title,
+          shareTime: record.create_time * 1000, // 转换为毫秒
+          authorAvatar: '', // 帖主头像需要从帖子详情获取，这里先留空
+          authorName: '', // 帖主名字需要从帖子详情获取，这里先留空
+          isRead: readPosts.includes(record.post.post_id), // 使用本地存储的已读状态
+          shareDescription: record.share_message
+        }))
+        
+        // 计算未读数量
+        this.unreadCount = this.shareMessages.filter(msg => !msg.isRead).length
+        console.log('[ProfilePage] 分享消息初始化完成，消息数量:', this.shareMessages.length, '未读数量:', this.unreadCount)
+      } else {
+        console.log('[ProfilePage] 获取分享消息失败:', response.message)
+        this.shareMessages = []
+        this.unreadCount = 0
+      }
+    } catch (error) {
+      console.error('[ProfilePage] 初始化分享消息异常:', error)
+      this.shareMessages = []
+      this.unreadCount = 0
+    }
+  }
+  
+  // 更新未读消息数量
+  updateUnreadCount(): void {
+    this.unreadCount = this.shareMessages.filter(msg => !msg.isRead).length
+    console.log('[ProfilePage] 未读消息数量:', this.unreadCount)
+  }
+  
   
   // aboutToDisappear 不再需要，AppStorage 会自动管理状态
 
@@ -128,7 +216,7 @@ export struct ProfilePage {
   buildWelcomeView() {
     Column() {
       Column() {
-        Image($r('app.media.ic_profile'))
+        Image($r('app.media.login_logo'))
           .width(120)
           .height(120)
           .margin({ top: 120, bottom: 40 })
@@ -190,9 +278,10 @@ export struct ProfilePage {
 
 
   build() {
-    if (!this.viewModel.isUserLoggedIn && !this.viewModel.isLoading) {
-      if (this.showAuthView) {
-        Column() {
+    Stack() {
+      if (!this.viewModel.isUserLoggedIn && !this.viewModel.isLoading) {
+        if (this.showAuthView) {
+          Column() {
           Row() {
             Image($r('app.media.ic_back'))
               .width(24)
@@ -239,16 +328,41 @@ export struct ProfilePage {
             .backgroundColor('#000')
 
           Row() {
-            Row() {
+            Row({ space: 12 }) {
+              // 分享消息图标
+              Button() {
+                Stack() {
+                  Image($r('app.media.ic_send'))
+                    .width(24)
+                    .height(24)
+                    .fillColor('#fff')
+                  
+                  // 未读消息小红点
+                  if (this.unreadCount > 0) {
+                    Text(this.unreadCount.toString())
+                      .fontSize(10)
+                      .fontColor('#fff')
+                      .backgroundColor('#FF0000')
+                      .borderRadius(8)
+                      .padding({ left: 4, right: 4, top: 1, bottom: 1 })
+                      .position({ x: 14, y: -4 })
+                  }
+                }
+              }
+              .backgroundColor(Color.Transparent)
+              .onClick(() => {
+                console.log('[ProfilePage] 点击分享消息图标')
+                this.loadShareMessages()
+              })
+              
+              // 设置图标
               Button() {
                 Image($r('app.media.ic_profilePage_setting'))
                   .width(24)
                   .height(24)
-                  .margin({left:16})
                   .fillColor('#fff');
               }
               .backgroundColor(Color.Transparent)
-              .margin({right:5})
               .onClick(() => {
                 console.log('[ProfilePage] 点击设置图标')
                 console.log('[ProfilePage] pathStack exists:', !!this.pathStack)
@@ -258,7 +372,7 @@ export struct ProfilePage {
             }
             .justifyContent(FlexAlign.End)
             .width('100%')
-            .padding({ left: 16, right: 16 });
+            .padding({ left: 16, right: 24 });
           }
           .position({ top: 1, left: 16, right: 16 })
           .width('100%')
@@ -316,11 +430,55 @@ export struct ProfilePage {
           .layoutWeight(1);
         }
       }
-      .width('100%')
-      .height('100%')
-      .backgroundColor('#f1f5f9');
+        .width('100%')
+        .height('100%')
+        .backgroundColor('#f1f5f9');
+      }
+      
+      // 分享消息弹窗（放在最外层以覆盖整个屏幕包括导航栏）
+      if (this.showShareDialog) {
+        ShareMessageDialog({
+          showDialog: $showShareDialog,
+          messageItems: this.shareMessages,
+          onPostClick: async (postId: string) => {
+            console.log('[ProfilePage] 点击分享的帖子:', postId)
+            
+            // 标记消息为已读
+            await this.markMessageAsRead(postId)
+            
+            // 更新分享消息项中的帖主信息（PostDetailPage会自己获取）
+            const message = this.shareMessages.find(msg => msg.postId === postId)
+            if (message) {
+              // 清空帖主信息，让PostDetailPage从API获取正确的信息
+              message.authorAvatar = ''
+              message.authorName = ''
+            }
+            
+            // 直接传递帖子ID，让PostDetailPage自己获取帖主信息
+            const param: PostDetailNavParam = {
+              post_id: postId
+              // 不传递user_avatar和user_name，让PostDetailPage从API获取正确的帖主信息
+            }
+            // 设置全局标记，返回时恢复弹窗
+            const timestamp = Date.now()
+            console.log('[ProfilePage] 设置全局标记 shouldShowShareDialog:', timestamp)
+            AppStorage.setOrCreate<number>('shouldShowShareDialog', timestamp)
+            this.showShareDialog = false
+            console.log('[ProfilePage] 关闭弹窗，准备跳转到详情页')
+            // 跳转到帖子详情页
+            this.pathStack.pushPathByName('PostDetailPage', param, false)
+          }
+        })
+      }
     }
+    .width('100%')
+    .height('100%')
   }
+  
+  // 注意：由于 ProfilePage 是在 TabContent 中，无法直接拦截返回键
+  // 用户可以通过以下方式关闭弹窗：
+  // 1. 点击弹窗外的背景区域
+  // 2. 点击弹窗右上角的关闭按钮
 
 
 
@@ -598,8 +756,29 @@ export struct ProfilePage {
 
   @Builder
   LikeContent() {
-    if (this.viewModel.likeItems.length === 0) {
+    if (this.viewModel.likeLoading && this.viewModel.likeItems.length === 0) {
       LoadingComponent()
+    } else if (this.viewModel.likeItems.length === 0 && !this.viewModel.likeLoading) {
+      Column() {
+        Image($r('app.media.ic_discover'))
+          .width(80)
+          .height(80)
+          .fillColor('#CCCCCC')
+          .margin({ bottom: 16 })
+
+        Text('还没有收藏作品')
+          .fontSize(16)
+          .fontColor('#999999')
+          .margin({ bottom: 8 })
+
+        Text('快去收藏喜欢的内容吧')
+          .fontSize(14)
+          .fontColor('#CCCCCC')
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
     } else {
       WaterFlow() {
         ForEach(this.viewModel.likeItems, (item: ImageItem, index: number) => {
@@ -636,5 +815,105 @@ export struct ProfilePage {
       .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
     }
   }
+
+  // 加载分享消息
+  async loadShareMessages() {
+    if (this.isLoadingShares) return
+    
+    this.isLoadingShares = true
+    
+    try {
+      const response = await getReceivedShares({
+        page: 1,
+        page_size: 20
+      })
+      
+      if (response.success && response.data) {
+        
+        // 获取已读状态
+        const readPosts = await this.getReadPosts()
+        
+        // 转换API数据为ShareMessageItem格式
+        this.shareMessages = response.data.shares.map((record: ShareRecord): ShareMessageItem => {
+          
+          return {
+            id: record.share_id,
+            friendAvatar: record.sender?.avatar_url || '', // 分享人头像（已经是完整URL）
+            friendName: record.sender?.username || '未知用户', // 分享人名字
+            postId: record.post.post_id,
+            postCover: record.post.cover_image ? `http://43.142.157.145:8080${record.post.cover_image}` : '',
+            postTitle: record.post.title,
+            shareTime: record.create_time * 1000, // 转换为毫秒
+            authorAvatar: '', // 帖主头像需要从帖子详情获取，这里先留空
+            authorName: '', // 帖主名字需要从帖子详情获取，这里先留空
+            isRead: readPosts.includes(record.post.post_id), // 使用本地存储的已读状态
+            shareDescription: record.share_message
+          }
+        })
+        
+        // 计算未读数量
+        this.unreadCount = this.shareMessages.filter(msg => !msg.isRead).length
+        
+        // 显示弹窗
+        this.showShareDialog = true
+      } else {
+        console.error('[ProfilePage] 加载分享消息失败:', response.message)
+        // 显示空状态
+        this.shareMessages = []
+        this.unreadCount = 0
+        this.showShareDialog = true
+      }
+    } catch (error) {
+      console.error('[ProfilePage] 加载分享消息异常:', error)
+      // 显示空状态
+      this.shareMessages = []
+      this.unreadCount = 0
+      this.showShareDialog = true
+    } finally {
+      this.isLoadingShares = false
+    }
+  }
+
+  // 标记消息为已读
+  async markMessageAsRead(postId: string) {
+    const message = this.shareMessages.find(msg => msg.postId === postId)
+    if (message) {
+      message.isRead = true
+      this.unreadCount = this.shareMessages.filter(msg => !msg.isRead).length
+      
+      // 保存已读状态到本地存储
+      await this.saveReadStatus(postId)
+    }
+  }
+
+  // 保存已读状态到本地存储
+  async saveReadStatus(postId: string) {
+    try {
+      await ReadStatusManager.getInstance().saveReadPost(postId)
+    } catch (error) {
+      console.error('[ProfilePage] 保存已读状态失败:', error)
+    }
+  }
+
+  // 获取已读帖子列表
+  async getReadPosts(): Promise<string[]> {
+    try {
+      return await ReadStatusManager.getInstance().getReadPosts()
+    } catch (error) {
+      console.error('[ProfilePage] 获取已读状态失败:', error)
+      return []
+    }
+  }
+
+  // 检查帖子是否已读
+  async isPostRead(postId: string): Promise<boolean> {
+    try {
+      return await ReadStatusManager.getInstance().isPostRead(postId)
+    } catch (error) {
+      console.error('[ProfilePage] 检查已读状态失败:', error)
+      return false
+    }
+  }
+
 
 }

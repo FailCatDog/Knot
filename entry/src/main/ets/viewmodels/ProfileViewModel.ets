@@ -307,6 +307,12 @@ export class ProfileViewModel {
     }
   }
 
+  // 清空用户信息缓存
+  clearUserInfoCache(): void {
+    console.log('[ProfileViewModel] 清空用户信息缓存')
+    this.userInfoCache.clear()
+  }
+
   // 获取用户公开信息（带缓存）
   private async getUserInfoWithCache(userId: string): Promise<UserPublicInfo | null> {
     console.log('[ProfileViewModel] getUserInfoWithCache 被调用, userId:', userId)

@@ -96,6 +96,12 @@ export struct EditProfilePage {
           }
 
           ListItem() {
+            this.buildInputItem('个人昵称', this.viewModel.username, (value: string) => {
+              this.viewModel.username = value
+            }, false)
+          }
+
+          ListItem() {
             this.buildInputItem('真实姓名', this.viewModel.realName, (value: string) => {
               this.viewModel.realName = value
             }, true)

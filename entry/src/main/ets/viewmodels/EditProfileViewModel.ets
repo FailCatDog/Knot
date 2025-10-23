@@ -17,6 +17,7 @@ export interface SaveUserInfoResult {
 @Observed
 export class EditProfileViewModel {
   // 表单数据
+  username: string = ''
   realName: string = ''
   phone: string = ''
   email: string = ''
@@ -39,6 +40,7 @@ export class EditProfileViewModel {
       
       if (response.success && response.data) {
         const userInfo: UserInfo = response.data
+        this.username = userInfo.username || ''
         this.realName = userInfo.real_name || ''
         this.phone = userInfo.phone || ''
         this.email = userInfo.email || ''
@@ -94,6 +96,9 @@ export class EditProfileViewModel {
         phone: this.phone
       }
 
+      if (this.username.trim()) {
+        updateParam.username = this.username
+      }
       if (this.email.trim()) {
         updateParam.email = this.email
       }
@@ -146,6 +151,9 @@ export class EditProfileViewModel {
   // 更新字段
   updateField(field: string, value: string): void {
     switch (field) {
+      case 'username':
+        this.username = value
+        break
       case 'realName':
         this.realName = value
         break

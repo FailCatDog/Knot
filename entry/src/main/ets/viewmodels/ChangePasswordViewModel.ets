@@ -50,8 +50,8 @@ export class ChangePasswordViewModel {
     }
 
     if (this.newPassword.length < 6 || this.newPassword.length > 100) {
-      this.errorMessage = '新密码长度需在6-100个字符之间'
-      return { success: false, message: '新密码长度需在6-100个字符之间' }
+      this.errorMessage = '新密码长度需在8-100个字符之间'
+      return { success: false, message: '新密码长度需在8-100个字符之间' }
     }
 
     if (this.newPassword !== this.confirmPassword) {
