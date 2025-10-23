@@ -193,50 +193,6 @@ export struct LoginPage {
       }
       .margin({ top: 1, bottom: 40 })
 
-      // 测试按钮已删除 - 不再需要
-      // Column() {
-      //   Button('测试API文档页面')
-      //     .width('80%')
-      //     .height(40)
-      //     .backgroundColor('#007DFF')
-      //     .fontColor('#FFFFFF')
-      //     .borderRadius(8)
-      //     .margin({ top: 20 })
-      //     .onClick(() => {
-      //       this.testNetworkConnection()
-      //     })
-      //
-      //   Button('测试API接口')
-      //     .width('80%')
-      //     .height(40)
-      //     .backgroundColor('#4CAF50')
-      //     .fontColor('#FFFFFF')
-      //     .borderRadius(8)
-      //     .margin({ top: 10 })
-      //     .onClick(() => {
-      //       this.testApiConnection()
-      //     })
-      //
-      //   Button('测试登录端点')
-      //     .width('80%')
-      //     .height(40)
-      //     .backgroundColor('#FF9800')
-      //     .fontColor('#FFFFFF')
-      //     .borderRadius(8)
-      //     .margin({ top: 10 })
-      //     .onClick(() => {
-      //       this.testLoginEndpoint()
-      //     })
-      //
-      //   if (this.testResult !== '') {
-      //     Text(this.testResult)
-      //       .fontSize(14)
-      //       .fontColor(this.testResult.includes('成功') ? '#00FF00' : '#FF0000')
-      //       .margin({ top: 10 })
-      //   }
-      // }
-      // .width('100%')
-      // .alignItems(HorizontalAlign.Center)
     }
     .width('100%')
     .height('100%')
