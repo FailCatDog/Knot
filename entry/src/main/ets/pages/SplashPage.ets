@@ -25,7 +25,7 @@ struct SplashPage {
   build() {
     Column() {
       Column() {
-        Image($r('app.media.ic_icon'))
+        Image($r('app.media.ic_logo'))
           .width(120)
           .height(120)
           .margin({ bottom: 24 })

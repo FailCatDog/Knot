@@ -17,7 +17,7 @@ export struct CommentSection {
   @State currentPage: number = 1
   @State hasMore: boolean = true
   @State totalCount: number = 0
-  @Prop refreshTimestamp: number = 0
+  @Prop @Watch('onRefreshChange') refreshTimestamp: number = 0
   @Prop initialComments: CommentEntity[] = []
   postId: string = ''
   onCommentCountChange?: (count: number) => void
@@ -32,10 +32,14 @@ export struct CommentSection {
     }
   }
 
-  aboutToUpdate() {
+  onRefreshChange() {
     if (this.refreshTimestamp !== this.lastRefreshTimestamp && this.refreshTimestamp > 0) {
       this.lastRefreshTimestamp = this.refreshTimestamp
-      this.refreshComments()
+      if (this.initialComments && this.initialComments.length > 0) {
+        this.loadInitialComments()
+      } else {
+        this.refreshComments()
+      }
     }
   }
 

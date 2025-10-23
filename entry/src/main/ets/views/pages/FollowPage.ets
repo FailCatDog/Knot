@@ -22,6 +22,7 @@ export struct FollowPage {
   @State selectedUserId: string | null = null
   @State userPosts: PostEntity[] = []
   @State isLoadingPosts: boolean = false
+  @State isRefreshing: boolean = false
 
   async aboutToAppear(): Promise<void> {
     await this.loadFollowingList()
@@ -118,6 +119,13 @@ export struct FollowPage {
 
   getItemLikeCount(id: string): number {
     return this.likeCounts.get(id) || 0
+  }
+
+  async handleRefresh(): Promise<void> {
+    if (!this.selectedUserId) return
+    this.isRefreshing = true
+    await this.loadUserPosts(this.selectedUserId)
+    this.isRefreshing = false
   }
 
   build() {
@@ -372,102 +380,108 @@ export struct FollowPage {
       .layoutWeight(1)
       .justifyContent(FlexAlign.Center)
     } else {
-      Scroll() {
-        Column({ space: 12 }) {
-          ForEach(this.userPosts, (post: PostEntity) => {
-            Column() {
-              Row() {
-                Image(post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/40/40')
-                  .width(36)
-                  .height(36)
-                  .borderRadius(18)
-                  .margin({ right: 8 })
-                  .objectFit(ImageFit.Cover)
-
-                Text(post.author?.username || post.username || `用户${post.user_id}`)
-                  .fontSize(15)
-                  .fontColor('#333333')
-                  .fontWeight(FontWeight.Medium)
-              }
-              .width('100%')
-              .padding({ left: 12, right: 12, top: 12, bottom: 8 })
-              .alignItems(VerticalAlign.Center)
-
-              if (post.images && post.images.length > 0) {
-                Image(post.images[0].file_url)
-                  .width('100%')
-                  .aspectRatio(post.images[0].width / post.images[0].height)
-                  .objectFit(ImageFit.Cover)
-              }
-
+      Refresh({ refreshing: $$this.isRefreshing }) {
+        Scroll() {
+          Column({ space: 12 }) {
+            ForEach(this.userPosts, (post: PostEntity) => {
               Column() {
-                if (post.title && post.title.trim() !== '') {
-                  Text(post.title)
-                    .fontSize(16)
-                    .fontColor('#333333')
-                    .fontWeight(FontWeight.Bold)
-                    .maxLines(2)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    .width('100%')
-                    .margin({ bottom: 8 })
-                }
-
                 Row() {
-                  Text(this.formatTime(post.create_time))
-                    .fontSize(13)
-                    .fontColor('#999999')
+                  Image(post.author?.avatar_url || post.avatar_url || 'https://picsum.photos/40/40')
+                    .width(36)
+                    .height(36)
+                    .borderRadius(18)
+                    .margin({ right: 8 })
+                    .objectFit(ImageFit.Cover)
 
-                  Blank()
-
-                  Row({ space: 16 }) {
-                    Row({ space: 4 }) {
-                      Image(this.isItemLiked(post.post_id) ? $r('app.media.ic_heart_filled') : $r('app.media.ic_heart_outline'))
-                        .width(18)
-                        .height(18)
-                        .fillColor(this.isItemLiked(post.post_id) ? '#FF4757' : '#999999')
-                        .onClick(() => {
-                          this.handleLikeClick(post.post_id)
-                        })
-
-                      Text(this.getItemLikeCount(post.post_id).toString())
-                        .fontSize(13)
-                        .fontColor('#999999')
-                    }
-
-                    Row({ space: 4 }) {
-                      Image($r('app.media.ic_favorite_outline'))
-                        .width(18)
-                        .height(18)
-                        .fillColor('#999999')
-
-                      Text(this.favoriteCounts.get(post.post_id)?.toString() || '0')
-                        .fontSize(13)
-                        .fontColor('#999999')
-                    }
-                  }
+                  Text(post.author?.username || post.username || `用户${post.user_id}`)
+                    .fontSize(15)
+                    .fontColor('#333333')
+                    .fontWeight(FontWeight.Medium)
                 }
                 .width('100%')
+                .padding({ left: 12, right: 12, top: 12, bottom: 8 })
                 .alignItems(VerticalAlign.Center)
+
+                if (post.images && post.images.length > 0) {
+                  Image(post.images[0].file_url)
+                    .width('100%')
+                    .aspectRatio(post.images[0].width / post.images[0].height)
+                    .objectFit(ImageFit.Cover)
+                }
+
+                Column() {
+                  if (post.title && post.title.trim() !== '') {
+                    Text(post.title)
+                      .fontSize(16)
+                      .fontColor('#333333')
+                      .fontWeight(FontWeight.Bold)
+                      .maxLines(2)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                      .width('100%')
+                      .margin({ bottom: 8 })
+                  }
+
+                  Row() {
+                    Text(this.formatTime(post.create_time))
+                      .fontSize(13)
+                      .fontColor('#999999')
+
+                    Blank()
+
+                    Row({ space: 16 }) {
+                      Row({ space: 4 }) {
+                        Image(this.isItemLiked(post.post_id) ? $r('app.media.ic_heart_filled') : $r('app.media.ic_heart_outline'))
+                          .width(18)
+                          .height(18)
+                          .fillColor(this.isItemLiked(post.post_id) ? '#FF4757' : '#999999')
+                          .onClick(() => {
+                            this.handleLikeClick(post.post_id)
+                          })
+
+                        Text(this.getItemLikeCount(post.post_id).toString())
+                          .fontSize(13)
+                          .fontColor('#999999')
+                      }
+
+                      Row({ space: 4 }) {
+                        Image($r('app.media.ic_favorite_outline'))
+                          .width(18)
+                          .height(18)
+                          .fillColor('#999999')
+
+                        Text(this.favoriteCounts.get(post.post_id)?.toString() || '0')
+                          .fontSize(13)
+                          .fontColor('#999999')
+                      }
+                    }
+                  }
+                  .width('100%')
+                  .alignItems(VerticalAlign.Center)
+                }
+                .padding(12)
+                .width('100%')
               }
-              .padding(12)
               .width('100%')
-            }
-            .width('100%')
-            .backgroundColor('#FFFFFF')
-            .borderRadius(8)
-            .border({ width: 1, color: '#E0E0E0' })
-            .onClick(() => {
-              this.handleCardClick(post.post_id)
+              .backgroundColor('#FFFFFF')
+              .borderRadius(8)
+              .border({ width: 1, color: '#E0E0E0' })
+              .onClick(() => {
+                this.handleCardClick(post.post_id)
+              })
             })
-          })
+          }
+          .width('100%')
+          .padding({ left: 8, right: 8, bottom: 16 })
         }
         .width('100%')
-        .padding({ left: 8, right: 8, bottom: 16 })
+        .layoutWeight(1)
+        .scrollable(ScrollDirection.Vertical)
+        .scrollBar(BarState.Off)
       }
-      .width('100%')
+      .onRefreshing(() => {
+        this.handleRefresh()
+      })
       .layoutWeight(1)
-      .scrollable(ScrollDirection.Vertical)
-      .scrollBar(BarState.Off)
     }
   }
 

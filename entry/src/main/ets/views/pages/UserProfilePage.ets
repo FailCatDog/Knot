@@ -27,6 +27,7 @@ export struct UserProfilePage {
   @State workHasMore: boolean = true
   @State likedItems: Set<string> = new Set()
   @State likeCounts: Map<string, number> = new Map()
+  @State isRefreshing: boolean = false
   
   private userId: string = ''
 
@@ -177,6 +178,12 @@ export struct UserProfilePage {
 
   isItemLiked(id: string): boolean {
     return this.likedItems.has(id)
+  }
+
+  async handleRefresh(): Promise<void> {
+    this.isRefreshing = true
+    await this.loadUserPosts(true)
+    this.isRefreshing = false
   }
 
   getGenderText(gender: string): string {
@@ -370,72 +377,77 @@ export struct UserProfilePage {
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
     } else {
-      WaterFlow() {
-        ForEach(this.workItems, (item: ImageItem) => {
-          FlowItem() {
-            ImageCard({
-              item: {
-                id: item.id,
-                imageUrl: item.imageUrl,
-                title: item.title,
-                userAvatar: item.userAvatar,
-                userId: item.userId,
-                description: item.description,
-                likeCount: this.getItemLikeCount(item.id),
-                isLiked: this.isItemLiked(item.id),
-                imageHeight: item.imageHeight
-              },
-              onLikeClick: (id: string) => this.handleLikeClick(id),
-              onCardClick: (id: string) => this.handleCardClick(id)
-            })
-          }
-          .width('100%')
-          .constraintSize({
-            maxWidth: '100%',
-            minWidth: 0
-          })
-        })
-
-        if (this.workHasMore || this.workLoading) {
-          FlowItem() {
-            Column() {
-              if (this.workLoading) {
-                LoadingProgress()
-                  .width(24)
-                  .height(24)
-                  .margin({ bottom: 8 })
-                Text('加载中...')
-                  .fontSize(12)
-                  .fontColor('#999999')
-              } else {
-                Text('点击加载更多')
-                  .fontSize(12)
-                  .fontColor('#666666')
-                  .padding(8)
-              }
+      Refresh({ refreshing: $$this.isRefreshing }) {
+        WaterFlow() {
+          ForEach(this.workItems, (item: ImageItem) => {
+            FlowItem() {
+              ImageCard({
+                item: {
+                  id: item.id,
+                  imageUrl: item.imageUrl,
+                  title: item.title,
+                  userAvatar: item.userAvatar,
+                  userId: item.userId,
+                  description: item.description,
+                  likeCount: this.getItemLikeCount(item.id),
+                  isLiked: this.isItemLiked(item.id),
+                  imageHeight: item.imageHeight
+                },
+                onLikeClick: (id: string) => this.handleLikeClick(id),
+                onCardClick: (id: string) => this.handleCardClick(id)
+              })
             }
             .width('100%')
-            .height(60)
-            .justifyContent(FlexAlign.Center)
-            .onClick(() => {
-              if (!this.workLoading && this.workHasMore) {
-                this.loadUserPosts(false)
-              }
+            .constraintSize({
+              maxWidth: '100%',
+              minWidth: 0
             })
+          })
+
+          if (this.workHasMore || this.workLoading) {
+            FlowItem() {
+              Column() {
+                if (this.workLoading) {
+                  LoadingProgress()
+                    .width(24)
+                    .height(24)
+                    .margin({ bottom: 8 })
+                  Text('加载中...')
+                    .fontSize(12)
+                    .fontColor('#999999')
+                } else {
+                  Text('点击加载更多')
+                    .fontSize(12)
+                    .fontColor('#666666')
+                    .padding(8)
+                }
+              }
+              .width('100%')
+              .height(60)
+              .justifyContent(FlexAlign.Center)
+              .onClick(() => {
+                if (!this.workLoading && this.workHasMore) {
+                  this.loadUserPosts(false)
+                }
+              })
+            }
+            .width('100%')
           }
-          .width('100%')
         }
+        .columnsTemplate('1fr 1fr')
+        .columnsGap(8)
+        .rowsGap(10)
+        .padding({ left: 8, right: 8, top: 8, bottom: 16 })
+        .width('100%')
+        .layoutWeight(1)
+        .onReachEnd(() => {
+          if (this.workHasMore && !this.workLoading) {
+            this.loadUserPosts(false)
+          }
+        })
       }
-      .columnsTemplate('1fr 1fr')
-      .columnsGap(8)
-      .rowsGap(10)
-      .padding({ left: 8, right: 8, top: 8, bottom: 16 })
-      .width('100%')
-      .layoutWeight(1)
-      .onReachEnd(() => {
-        if (this.workHasMore && !this.workLoading) {
-          this.loadUserPosts(false)
-        }
+      .onRefreshing(() => {
+        this.handleRefresh()
       })
     }
   }

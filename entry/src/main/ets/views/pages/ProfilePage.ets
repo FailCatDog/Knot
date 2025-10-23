@@ -39,10 +39,11 @@ export struct ProfilePage {
   // 作品点赞状态
   @State workLikedItems: Set<string> = new Set()
   @State workLikeCounts: Map<string, number> = new Map()
+  @State isWorkRefreshing: boolean = false
   
-  // 收藏点赞状态
   @State likeLikedItems: Set<string> = new Set()
   @State likeLikeCounts: Map<string, number> = new Map()
+  @State isLikeRefreshing: boolean = false
   
   // 分享消息相关
   @State showShareDialog: boolean = false
@@ -216,7 +217,7 @@ export struct ProfilePage {
   buildWelcomeView() {
     Column() {
       Column() {
-        Image($r('app.media.login_logo'))
+        Image($r("app.media.ic_logo"))
           .width(120)
           .height(120)
           .margin({ top: 120, bottom: 40 })
@@ -653,6 +654,20 @@ export struct ProfilePage {
     return this.likeLikeCounts.get(id) || 0
   }
 
+  async handleWorkRefresh(): Promise<void> {
+    this.isWorkRefreshing = true
+    await this.viewModel.loadUserPosts(true)
+    this.initializeLikeStates()
+    this.isWorkRefreshing = false
+  }
+
+  async handleLikeRefresh(): Promise<void> {
+    this.isLikeRefreshing = true
+    await this.viewModel.loadUserFavorites(true)
+    this.initializeLikeStates()
+    this.isLikeRefreshing = false
+  }
+
   @Builder
   WorkContent() {
     if (this.viewModel.workLoading && this.viewModel.workItems.length === 0) {
@@ -679,77 +694,80 @@ export struct ProfilePage {
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
     } else {
-      WaterFlow() {
-        ForEach(this.viewModel.workItems, (item: ImageItem, index: number) => {
-          FlowItem() {
-            ImageCard({
-              item: {
-                id: item.id,
-                imageUrl: item.imageUrl,
-                title: item.title,
-                userAvatar: item.userAvatar,
-                userId: item.userId,
-                description: item.description,
-                likeCount: this.getWorkItemLikeCount(item.id),
-                isLiked: this.isWorkItemLiked(item.id),
-                imageHeight: item.imageHeight
-              },
-              onLikeClick: async (id: string) => await this.handleWorkLikeClick(id),
-              onCardClick: (id: string) => this.handleWorkCardClick(id)
+      Refresh({ refreshing: $$this.isWorkRefreshing }) {
+        WaterFlow() {
+          ForEach(this.viewModel.workItems, (item: ImageItem, index: number) => {
+            FlowItem() {
+              ImageCard({
+                item: {
+                  id: item.id,
+                  imageUrl: item.imageUrl,
+                  title: item.title,
+                  userAvatar: item.userAvatar,
+                  userId: item.userId,
+                  description: item.description,
+                  likeCount: this.getWorkItemLikeCount(item.id),
+                  isLiked: this.isWorkItemLiked(item.id),
+                  imageHeight: item.imageHeight
+                },
+                onLikeClick: async (id: string) => await this.handleWorkLikeClick(id),
+                onCardClick: (id: string) => this.handleWorkCardClick(id)
+              })
+            }
+            .width('100%')
+            .constraintSize({
+              maxWidth: '100%',
+              minWidth: 0
             })
-          }
-          .width('100%')
-          .constraintSize({
-            maxWidth: '100%',
-            minWidth: 0
           })
-        })
 
-        // 加载更多或加载中提示
-        if (this.viewModel.workHasMore || this.viewModel.workLoading) {
-          FlowItem() {
-            Column() {
-              if (this.viewModel.workLoading) {
-                LoadingProgress()
-                  .width(24)
-                  .height(24)
-                  .margin({ bottom: 8 })
-                Text('加载中...')
-                  .fontSize(12)
-                  .fontColor('#999999')
-              } else {
-                Text('点击加载更多')
-                  .fontSize(12)
-                  .fontColor('#666666')
-                  .padding(8)
-                  .backgroundColor('#F5F5F5')
-                  .borderRadius(4)
-                  .onClick(() => {
-                    this.viewModel.loadUserPosts(false)
-                  })
+          if (this.viewModel.workHasMore || this.viewModel.workLoading) {
+            FlowItem() {
+              Column() {
+                if (this.viewModel.workLoading) {
+                  LoadingProgress()
+                    .width(24)
+                    .height(24)
+                    .margin({ bottom: 8 })
+                  Text('加载中...')
+                    .fontSize(12)
+                    .fontColor('#999999')
+                } else {
+                  Text('点击加载更多')
+                    .fontSize(12)
+                    .fontColor('#666666')
+                    .padding(8)
+                    .backgroundColor('#F5F5F5')
+                    .borderRadius(4)
+                    .onClick(() => {
+                      this.viewModel.loadUserPosts(false)
+                    })
+                }
               }
+              .width('100%')
+              .height(60)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
             }
             .width('100%')
             .height(60)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
           }
-          .width('100%')
-          .height(60)
         }
+        .columnsTemplate('1fr 1fr')
+        .columnsGap(8)
+        .rowsGap(10)
+        .padding({ left: 8, right: 8, top: 8, bottom: 16 })
+        .width('100%')
+        .layoutWeight(1)
+        .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
+        .onReachEnd(() => {
+          if (this.viewModel.workHasMore && !this.viewModel.workLoading) {
+            this.viewModel.loadUserPosts(false)
+          }
+        })
       }
-      .columnsTemplate('1fr 1fr')
-      .columnsGap(8)
-      .rowsGap(10)
-      .padding({ left: 8, right: 8, top: 8, bottom: 16 })
-      .width('100%')
-      .layoutWeight(1)
-      .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
-      .onReachEnd(() => {
-        // 滚动到底部时自动加载更多
-        if (this.viewModel.workHasMore && !this.viewModel.workLoading) {
-          this.viewModel.loadUserPosts(false)
-        }
+      .onRefreshing(() => {
+        this.handleWorkRefresh()
       })
     }
   }
@@ -780,39 +798,44 @@ export struct ProfilePage {
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
     } else {
-      WaterFlow() {
-        ForEach(this.viewModel.likeItems, (item: ImageItem, index: number) => {
-          FlowItem() {
-            ImageCard({
-              item: {
-                id: item.id,
-                imageUrl: item.imageUrl,
-                title: item.title,
-                userAvatar: item.userAvatar,
-                userId: item.userId,
-                description: item.description,
-                likeCount: this.getLikeItemLikeCount(item.id),
-                isLiked: this.isLikeItemLiked(item.id),
-                imageHeight: item.imageHeight
-              },
-              onLikeClick: async (id: string) => await this.handleLikeLikeClick(id),
-              onCardClick: (id: string) => this.handleLikeCardClick(id)
+      Refresh({ refreshing: $$this.isLikeRefreshing }) {
+        WaterFlow() {
+          ForEach(this.viewModel.likeItems, (item: ImageItem, index: number) => {
+            FlowItem() {
+              ImageCard({
+                item: {
+                  id: item.id,
+                  imageUrl: item.imageUrl,
+                  title: item.title,
+                  userAvatar: item.userAvatar,
+                  userId: item.userId,
+                  description: item.description,
+                  likeCount: this.getLikeItemLikeCount(item.id),
+                  isLiked: this.isLikeItemLiked(item.id),
+                  imageHeight: item.imageHeight
+                },
+                onLikeClick: async (id: string) => await this.handleLikeLikeClick(id),
+                onCardClick: (id: string) => this.handleLikeCardClick(id)
+              })
+            }
+            .width('100%')
+            .constraintSize({
+              maxWidth: '100%',
+              minWidth: 0
             })
-          }
-          .width('100%')
-          .constraintSize({
-            maxWidth: '100%',
-            minWidth: 0
           })
-        })
+        }
+        .columnsTemplate('1fr 1fr')
+        .columnsGap(8)
+        .rowsGap(10)
+        .padding({ left: 8, right: 8, top: 8, bottom: 16 })
+        .width('100%')
+        .layoutWeight(1)
+        .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
       }
-      .columnsTemplate('1fr 1fr')
-      .columnsGap(8)
-      .rowsGap(10)
-      .padding({ left: 8, right: 8, top: 8, bottom: 16 })
-      .width('100%')
-      .layoutWeight(1)
-      .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
+      .onRefreshing(() => {
+        this.handleLikeRefresh()
+      })
     }
   }
 
