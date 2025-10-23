@@ -48,6 +48,13 @@ interface CommentEndpoints {
   DELETE_COMMENT: string;
 }
 
+interface ShareEndpoints {
+  CREATE_SHARE: string;
+  GET_RECEIVED_SHARES: string;
+  GET_SENT_SHARES: string;
+  DELETE_SHARE: string;
+}
+
 export class ApiConstants {
   static readonly BASE_URL = 'http://43.142.157.145:8080/api/v1';
   static readonly TIMEOUT = 10000;
@@ -87,6 +94,13 @@ export class ApiConstants {
     CREATE_COMMENT: '/posts/{post_id}/comments',
     GET_COMMENTS: '/posts/{post_id}/comments',
     DELETE_COMMENT: '/posts/{post_id}/comments/{comment_id}'
+  };
+
+  static readonly SHARE_ENDPOINTS: ShareEndpoints = {
+    CREATE_SHARE: '/shares/posts',
+    GET_RECEIVED_SHARES: '/shares/received',
+    GET_SENT_SHARES: '/shares/sent',
+    DELETE_SHARE: '/shares/{share_id}'
   };
 
   static readonly HTTP_STATUS: HttpStatus = {
