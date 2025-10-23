@@ -19,8 +19,9 @@ export struct DiscoverPage {
   @State likeCounts: Map<string, number> = new Map()
   @State imageList: ImageItem[] = []
   @State isInitialLoading: boolean = true
-  @Consume('NavPathStack') navPathStack: NavPathStack // 父组件传过来的导航栈
-  private scroller: Scroller = new Scroller() // 瀑布流控制器
+  @State isRefreshing: boolean = false
+  @Consume('NavPathStack') navPathStack: NavPathStack
+  private scroller: Scroller = new Scroller()
 
   async aboutToAppear(): Promise<void> {
     await this.loadInitialData()  // 加载初数据
@@ -65,8 +66,15 @@ export struct DiscoverPage {
    * @returns
    */
   async loadMoreData(): Promise<void> {
-    await this.viewModel.loadPosts(false) // false表示追加
+    await this.viewModel.loadPosts(false)
     this.updateImageList()
+  }
+
+  async handleRefresh(): Promise<void> {
+    this.isRefreshing = true
+    await this.viewModel.loadPosts(true)
+    this.updateImageList()
+    this.isRefreshing = false
   }
 
   /**
@@ -156,58 +164,63 @@ export struct DiscoverPage {
 
   @Builder
   buildContent(): void {
-    WaterFlow({ scroller: this.scroller }) {  // 瀑布流组件，支持不规则或者规则网格排列的列表，scroller的作用是控制滚动行为
-      ForEach(this.imageList, (item: ImageItem, index: number) => { // 生成子组件的回调函数
-        FlowItem() {
-          ImageCard({
-            item: {
-              id: item.id,
-              imageUrl: item.imageUrl,
-              title: item.title,
-              description: item.description,
-              userAvatar: item.userAvatar,
-              userId: item.userId,
-              likeCount: this.getItemLikeCount(item.id),
-              isLiked: this.isItemLiked(item.id),
-              imageHeight: item.imageHeight
-            },
-            onLikeClick: (id: string) => this.handleLikeClick(id),
-            onCardClick: (id: string) => this.handleCardClick(id)
-          })
-        }
-        .width('100%')
-        .constraintSize({ // 列布局模板设计
-          maxWidth: '100%',
-          minWidth: 0
-        })
-        .margin({ right: 5 })
-      })
-
-      if (this.viewModel.isLoading) {
-        FlowItem() {
-          Row() {
-            Text('加载中...')
-              .fontSize(14)
-              .fontColor('#999999')
+    Refresh({ refreshing: $$this.isRefreshing }) {
+      WaterFlow({ scroller: this.scroller }) {
+        ForEach(this.imageList, (item: ImageItem, index: number) => {
+          FlowItem() {
+            ImageCard({
+              item: {
+                id: item.id,
+                imageUrl: item.imageUrl,
+                title: item.title,
+                description: item.description,
+                userAvatar: item.userAvatar,
+                userId: item.userId,
+                likeCount: this.getItemLikeCount(item.id),
+                isLiked: this.isItemLiked(item.id),
+                imageHeight: item.imageHeight
+              },
+              onLikeClick: (id: string) => this.handleLikeClick(id),
+              onCardClick: (id: string) => this.handleCardClick(id)
+            })
           }
           .width('100%')
-          .height(50)
-          .justifyContent(FlexAlign.Center)
+          .constraintSize({
+            maxWidth: '100%',
+            minWidth: 0
+          })
+          .margin({ right: 5 })
+        })
+
+        if (this.viewModel.isLoading) {
+          FlowItem() {
+            Row() {
+              Text('加载中...')
+                .fontSize(14)
+                .fontColor('#999999')
+            }
+            .width('100%')
+            .height(50)
+            .justifyContent(FlexAlign.Center)
+          }
+          .width('100%')
         }
-        .width('100%')
       }
+      .columnsTemplate('1fr 1fr')
+      .columnsGap(8)
+      .rowsGap(10)
+      .padding({ left: 8, right: 8, top: 8, bottom: 16 })
+      .width('100%')
+      .layoutWeight(1)
+      .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
+      .onReachEnd(() => {
+        if (this.viewModel.hasMore && !this.viewModel.isLoading) {
+          this.loadMoreData()
+        }
+      })
     }
-    .columnsTemplate('1fr 1fr')
-    .columnsGap(8)
-    .rowsGap(10)
-    .padding({ left: 8, right: 8, top: 8, bottom: 16 })
-    .width('100%')
-    .layoutWeight(1)
-    .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true }) // 边缘效果，触底回弹，完全是为了好看
-    .onReachEnd(() => { // 触底触发加载更多
-      if (this.viewModel.hasMore && !this.viewModel.isLoading) {
-        this.loadMoreData()
-      }
+    .onRefreshing(() => {
+      this.handleRefresh()
     })
   }
 

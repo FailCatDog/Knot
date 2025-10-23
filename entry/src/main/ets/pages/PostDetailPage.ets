@@ -731,10 +731,15 @@ struct PostDetailPage {
     const content = this.commentText.trim()
     const response = await createComment(this.postId, content)
 
-    if (response.success) {
+    if (response.code === 201) {
       this.commentText = ''
       ToastUtil.getInstance().show('评论成功')
-      this.refreshTimestamp = Date.now()
+      const commentsResponse = await getComments(this.postId, 1, 20)
+      if (commentsResponse.success && commentsResponse.data) {
+        this.initialComments = commentsResponse.data.comments
+        this.commentCount = commentsResponse.data.total
+        this.refreshTimestamp = Date.now()
+      }
     } else {
       ToastUtil.getInstance().show(response.message || '评论失败')
     }

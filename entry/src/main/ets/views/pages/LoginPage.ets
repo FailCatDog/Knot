@@ -195,7 +195,7 @@ export struct LoginPage {
   build() {
     Column({ space: 24 }) {
       // Logo图片
-      Image($r('app.media.login_logo'))
+      Image($r("app.media.ic_logo"))
         .width(120)
         .height(120)
         .margin({ top: 5, bottom: 1 })

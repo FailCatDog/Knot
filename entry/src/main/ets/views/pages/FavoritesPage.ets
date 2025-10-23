@@ -13,6 +13,7 @@ export struct FavoritesPage {
   @Consume('NavPathStack') pathStack: NavPathStack
   @State viewModel: FavoritesViewModel = new FavoritesViewModel()
   @State favoriteItems: ImageItem[] = []
+  @State isRefreshing: boolean = false
 
   aboutToAppear(): void {
     // 每次页面显示时重新加载收藏（确保数据最新）
@@ -26,6 +27,12 @@ export struct FavoritesPage {
       await this.viewModel.loadMore()
     }
     this.updateFavoriteItems()
+  }
+
+  async handleRefresh(): Promise<void> {
+    this.isRefreshing = true
+    await this.loadFavorites(true)
+    this.isRefreshing = false
   }
 
   updateFavoriteItems(): void {
@@ -124,14 +131,13 @@ export struct FavoritesPage {
           .justifyContent(FlexAlign.Center)
           .alignItems(HorizontalAlign.Center)
         } else {
-          Refresh({ refreshing: this.viewModel.isLoading && this.favoriteItems.length > 0 }) {
+          Refresh({ refreshing: $$this.isRefreshing }) {
             WaterFlow() {
               ForEach(this.favoriteItems, (item: ImageItem) => {
                 FlowItem() {
                   ImageCard({
                     item: item,
                     onLikeClick: (id: string) => {
-                      // 点赞功能
                     },
                     onCardClick: (id: string) => this.handleCardClick(id)
                   })
@@ -186,7 +192,7 @@ export struct FavoritesPage {
             })
           }
           .onRefreshing(() => {
-            this.loadFavorites(true)
+            this.handleRefresh()
           })
           .layoutWeight(1)
         }
