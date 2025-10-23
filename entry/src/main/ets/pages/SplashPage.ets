@@ -47,6 +47,7 @@ struct SplashPage {
       }
       .justifyContent(FlexAlign.Center)
       .layoutWeight(1)
+      .margin({ top: -80 })
 
       Column() {
         Text('© 2025 Knot Team')

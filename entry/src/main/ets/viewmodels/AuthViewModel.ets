@@ -36,9 +36,9 @@ export class AuthViewModel {
       return { success: false, message: '请输入密码' }
     }
 
-    if (password.length < 6 || password.length > 100) {
-      this.loginErrorMessage = '密码长度需在6-100个字符之间'
-      return { success: false, message: '密码长度需在6-100个字符之间' }
+    if (password.length < 8 || password.length > 100) {
+      this.loginErrorMessage = '密码长度需在8-100个字符之间'
+      return { success: false, message: '密码长度需在8-100个字符之间' }
     }
 
     this.isLoginLoading = true
@@ -137,9 +137,9 @@ export class AuthViewModel {
       return { success: false, message: '请输入密码' }
     }
 
-    if (password.length < 6 || password.length > 100) {
-      this.registerErrorMessage = '密码长度需在6-100个字符之间'
-      return { success: false, message: '密码长度需在6-100个字符之间' }
+    if (password.length < 8 || password.length > 100) {
+      this.registerErrorMessage = '密码长度需在8-100个字符之间'
+      return { success: false, message: '密码长度需在8-100个字符之间' }
     }
 
     if (password !== confirmPassword) {

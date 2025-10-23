@@ -70,6 +70,7 @@ export interface ChangePasswordRequest extends Record<string, string | number | 
 }
 
 export interface UpdateUserInfoRequest extends Record<string, string | number | boolean | object | undefined> {
+  username?: string;
   real_name: string;
   email?: string;
   avatar_url?: string;
